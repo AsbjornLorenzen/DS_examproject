@@ -1,7 +1,7 @@
 name: conda_env
 channels:
-  - defaults
   - conda-forge
+  - defaults
 dependencies:
   - bzip2=1.0.8=h1de35cc_0
   - ca-certificates=2023.01.10=hecd8cb5_0
@@ -32,4 +32,4 @@ dependencies:
   - wheel=0.37.1=pyhd3eb1b0_0
   - xz=5.2.10=h6c40b1e_1
   - zlib=1.2.13=h4dc903c_0
-prefix: /Users/asbjorn/Datalogi/datascience/DS_examproject/conda_env
+prefix: /Users/andreaset/opt/anaconda3/envs/conda_env

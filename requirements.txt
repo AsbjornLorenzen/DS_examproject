@@ -1,4 +1,4 @@
-# packages in environment at /Users/asbjorn/Datalogi/datascience/DS_examproject/conda_env:
+# packages in environment at /Users/andreaset/opt/anaconda3/envs/conda_env:
 #
 # Name                    Version                   Build  Channel
 bzip2                     1.0.8                h1de35cc_0  
