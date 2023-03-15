@@ -1,4 +1,4 @@
-name: /Users/asbjorn/Datalogi/datascience/DS_examproject/conda_env
+name: conda_env
 channels:
   - defaults
   - conda-forge
