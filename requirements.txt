@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-# packages in environment at /Users/andreaset/opt/anaconda3/envs/conda_env:
-=======
 # packages in environment at /Users/asbjorn/opt/anaconda3/envs/conda_env:
->>>>>>> ea1af748ca38225571caf0d8fbf6883b50ee48d1
 #
 # Name                    Version                   Build  Channel
 bzip2                     1.0.8                h1de35cc_0  
