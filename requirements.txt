@@ -1,4 +1,4 @@
-# packages in environment at /Users/asbjorn/Datalogi/datascience/DS_examproject/conda_env:
+# packages in environment at /Users/asbjorn/opt/anaconda3/envs/conda_env:
 #
 # Name                    Version                   Build  Channel
 bzip2                     1.0.8                h1de35cc_0  
@@ -16,13 +16,17 @@ llvm-openmp               14.0.6               h0dcd299_0
 ncurses                   6.4                  hcec6c5f_0  
 numpy                     1.24.2          py311ha9d2c9f_0    conda-forge
 openssl                   1.1.1t               hca72f7f_0  
+pandas                    1.5.3           py311hd84f3f5_0    conda-forge
 pip                       23.0.1             pyhd8ed1ab_0    conda-forge
 python                    3.11.0               h1fd4e5f_3  
+python-dateutil           2.8.2              pyhd3eb1b0_0  
 python_abi                3.11                    2_cp311    conda-forge
+pytz                      2021.3             pyhd3eb1b0_0  
 readline                  8.2                  hca72f7f_0  
 scikit-learn              1.2.2           py311h087fafe_0    conda-forge
 scipy                     1.9.3           py311h939689b_2    conda-forge
 setuptools                67.6.0             pyhd8ed1ab_0    conda-forge
+six                       1.16.0             pyhd3eb1b0_1  
 sqlite                    3.40.1               h880c91c_0  
 threadpoolctl             2.2.0              pyh0d69192_0  
 tk                        8.6.12               h5d9f67b_0  
