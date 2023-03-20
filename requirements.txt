@@ -3,6 +3,8 @@
 # Name                    Version                   Build  Channel
 bzip2                     1.0.8                h1de35cc_0  
 ca-certificates           2023.01.10           hecd8cb5_0  
+click                     8.0.4           py311hecd8cb5_0  
+colorama                  0.4.6           py311hecd8cb5_0  
 joblib                    1.2.0              pyhd8ed1ab_0    conda-forge
 libblas                   3.9.0           16_osx64_openblas    conda-forge
 libcblas                  3.9.0           16_osx64_openblas    conda-forge
@@ -14,6 +16,7 @@ liblapack                 3.9.0           16_osx64_openblas    conda-forge
 libopenblas               0.3.21               h54e7dc3_0  
 llvm-openmp               14.0.6               h0dcd299_0  
 ncurses                   6.4                  hcec6c5f_0  
+nltk                      3.7                pyhd3eb1b0_0  
 numpy                     1.24.2          py311ha9d2c9f_0    conda-forge
 openssl                   1.1.1t               hca72f7f_0  
 pandas                    1.5.3           py311hd84f3f5_0    conda-forge
@@ -23,6 +26,7 @@ python-dateutil           2.8.2              pyhd3eb1b0_0
 python_abi                3.11                    2_cp311    conda-forge
 pytz                      2021.3             pyhd3eb1b0_0  
 readline                  8.2                  hca72f7f_0  
+regex                     2022.7.9        py311h6c40b1e_0  
 scikit-learn              1.2.2           py311h087fafe_0    conda-forge
 scipy                     1.9.3           py311h939689b_2    conda-forge
 setuptools                67.6.0             pyhd8ed1ab_0    conda-forge
@@ -30,6 +34,7 @@ six                       1.16.0             pyhd3eb1b0_1
 sqlite                    3.40.1               h880c91c_0  
 threadpoolctl             2.2.0              pyh0d69192_0  
 tk                        8.6.12               h5d9f67b_0  
+tqdm                      4.63.0             pyhd3eb1b0_0  
 tzdata                    2022g                h04d1e81_0  
 wheel                     0.37.1             pyhd3eb1b0_0  
 xz                        5.2.10               h6c40b1e_1  
