@@ -1,3 +1,4 @@
 conda_env/
 testNotebook.ipynb
 .DS_Store
+data/
