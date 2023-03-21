@@ -5,10 +5,12 @@ from nltk.stem import WordNetLemmatizer
 from cleantext import clean
 from cleantext.sklearn import CleanTransformer
 import nltk
-nltk.download('punkt')
+from timeit import default_timer as timer
+#nltk.download('punkt')
 
 class preprocessor():
     def __init__(self):
+        pd.options.mode.chained_assignment = None # ignore warnings
         self.ps = PorterStemmer()
         self.lemmatizer = WordNetLemmatizer()
         # Define the cleaning object
@@ -27,21 +29,45 @@ class preprocessor():
             no_punct=True,
             lang="en")
 
-    def clean_data(self,df):
-        
+    def clean_data(self,df,verbosity=0):
+        starttime = timer()
+        # Remove rows missing type
+        df = df[ df['type'].notnull() ]
+
         #TODO: Move these to tokenize function instead 
         cleaned = self.cleaner.transform(df['content'])
         tokenized = cleaned.apply(nltk.word_tokenize)
         df['content'] = tokenized
-        print(f"Vocabulary after tokenization: ",self.get_vocab_size(df))
+        if (verbosity > 0):
+            time1 = timer()
+            print(f"Vocabulary after tokenization: ",self.get_vocab_size(df))
+            print(f"Tokenized in {round(time1-starttime,3)} seconds")
 
         # Remove stopwords:
         df['content'] = df['content'].apply(self.remove_stopwords)
-        print(f"Vocabulary after removal of stopwords: ",self.get_vocab_size(df))
+        if (verbosity > 0):
+            time2 = timer()
+            print(f"Vocabulary after removal of stopwords: ",self.get_vocab_size(df))
+            print(f"Removed stopwords in {round(time2-time1,3)} seconds")
 
         # Stem:
         df['content'] = df['content'].apply(self.stem)
-        print(f"Vocabulary after stemming: ",self.get_vocab_size(df))
+        if (verbosity > 0):
+            time3 = timer()
+            print(f"Vocabulary after stemming: ",self.get_vocab_size(df))
+            print(f"Stemmed in {round(time3-time2,3)} seconds")
+
+        # Use counter:
+        #NOTE: Do we want to save the file as a counter object?
+        df['content'] = df['content'].apply(self.to_counter)
+        if (verbosity > 0):
+            time4 = timer()
+            print(f"Saved to df in in {round(time4-time3,3)} seconds")
+        return df
+
+    def to_counter(self,df):
+        c = Counter(df)
+        return c
 
     def get_vocab_size(self,df):
         words = []
@@ -56,7 +82,7 @@ class preprocessor():
         return tokenized
 
     def read_data(self,filename):
-        self.df = pd.read_csv(filename)
+        return pd.read_csv(filename)
 
     def remove_stopwords(self,tokens):
         stopwords = open('docs/stopwords.txt').read().split('\n')
@@ -67,8 +93,12 @@ class preprocessor():
     def stem(self,tokens):
         stemmed_words = [self.ps.stem(word) for word in tokens]
         return stemmed_words
+    
+    def save_df(self,df):
+        df.to_csv('data/newssample_preprocessed.csv')
 
 if __name__ == '__main__':
     p = preprocessor()
-    p.read_data('data/newssample.txt')
-    p.clean_data(p.df)
+    df = p.read_data('data/newssample.csv')
+    df = p.clean_data(df)
+    p.save_df(df)
