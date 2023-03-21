@@ -6,6 +6,7 @@ from cleantext import clean
 from cleantext.sklearn import CleanTransformer
 import nltk
 from timeit import default_timer as timer
+from sklearn.model_selection import train_test_split
 #nltk.download('punkt')
 
 class preprocessor():
@@ -112,8 +113,34 @@ class preprocessor():
     def save_df(self,df):
         df.to_csv('data/newssample_preprocessed.csv')        
 
+    def bulk_preprocess(self,nrows,input_file,output_file):
+        print('Preprocessing data...')
+        starttime = timer()
+
+        loaded_chunks = 0
+        chunksize = 5000
+
+        for chunk in pd.read_csv(input_file, chunksize=chunksize,nrows=nrows,engine='python'):
+            processed_chunk = p.clean_data(chunk,verbosity=1)
+
+            train, remaining = train_test_split(
+                processed_chunk,test_size=0.2,random_state=42
+            )
+
+            validation, test = train_test_split(
+                remaining,test_size=0.5,random_state=42
+            )
+
+            train.to_csv(output_file+'_train.csv', mode='a', index=False, header=False)
+            validation.to_csv(output_file+'_validation.csv', mode='a', index=False, header=False)
+            test.to_csv(output_file+'_test.csv', mode='a', index=False, header=False)
+
+            loaded_chunks += chunksize
+            endtime = timer()
+            print(f"Done loading {loaded_chunks} rows in {round(endtime-starttime,3)} seconds")
+
+
+
 if __name__ == '__main__':
     p = preprocessor()
-    df = p.read_data('data/newssample.csv')
-    df = p.clean_data(df)
-    p.save_df(df)
+    p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_3')
