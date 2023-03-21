@@ -31,6 +31,7 @@ class preprocessor():
 
     def clean_data(self,df,verbosity=0):
         starttime = timer()
+
         # Remove rows missing type
         df = df[ df['type'].notnull() ]
 
@@ -63,6 +64,10 @@ class preprocessor():
         if (verbosity > 0):
             time4 = timer()
             print(f"Saved to df in in {round(time4-time3,3)} seconds")
+
+        #Remove tail:
+        self.remove_tail(df['content'])
+
         return df
 
     def to_counter(self,df):
@@ -93,9 +98,19 @@ class preprocessor():
     def stem(self,tokens):
         stemmed_words = [self.ss.stem(word) for word in tokens]
         return stemmed_words
-    
+
+    def remove_tail(self, counters): #removes words that occur very infrequently
+        threshold = counters.shape[0]/100 #words that on average appear in less than 1/100 of the articles
+        combined_counts = sum(counters, Counter())
+        words_to_delete = [k for k, v in combined_counts.items() if v <= threshold]
+        for counter in counters:
+            for word in words_to_delete:
+                del counter[word]
+        print(len(words_to_delete))
+        return counters        
+
     def save_df(self,df):
-        df.to_csv('data/newssample_preprocessed.csv')
+        df.to_csv('data/newssample_preprocessed.csv')        
 
 if __name__ == '__main__':
     p = preprocessor()
