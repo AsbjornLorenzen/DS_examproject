@@ -1,6 +1,6 @@
 import pandas as pd
 from collections import Counter
-from nltk.stem import PorterStemmer
+from nltk.stem.snowball import SnowballStemmer
 from nltk.stem import WordNetLemmatizer 
 from cleantext import clean
 from cleantext.sklearn import CleanTransformer
@@ -11,12 +11,12 @@ from timeit import default_timer as timer
 class preprocessor():
     def __init__(self):
         pd.options.mode.chained_assignment = None # ignore warnings
-        self.ps = PorterStemmer()
+        self.ss = SnowballStemmer(language='english')
         self.lemmatizer = WordNetLemmatizer()
         # Define the cleaning object
         self.cleaner = CleanTransformer(
             # Modified from clean-texts site:
-            lower=True,                     # lowercase text
+            lower=True,                    # lowercase text
             no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
             no_urls=True,                  # replace all URLs with a special token
             no_emails=True,                # replace all email addresses with a special token
@@ -91,7 +91,7 @@ class preprocessor():
         return output
     
     def stem(self,tokens):
-        stemmed_words = [self.ps.stem(word) for word in tokens]
+        stemmed_words = [self.ss.stem(word) for word in tokens]
         return stemmed_words
     
     def save_df(self,df):
