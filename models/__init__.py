@@ -1,1 +1,3 @@
 from .model_logistic_regression import model_logistic_regression
+from .model_linear_regression import model_linear_regression
+from .model_dtree_classifier import model_dtree_classifier
