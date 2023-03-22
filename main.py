@@ -1,6 +1,6 @@
 import pandas as pd
 from scripts import preprocessor
-from models import model_logistic_regression, model_linear_regression
+from models import simple_models
 import gc
 
 
@@ -10,7 +10,7 @@ import gc
 
 class fake_news_predictor():
     def __init__(self):
-        print('Initializing fake news predictor...')
+        print('Initializing fake news predictors...')
         self.preprocessor = preprocessor
 
         # 1 means fake, 0 means true.
@@ -36,20 +36,25 @@ class fake_news_predictor():
     def preprocess_all_data(self,nrows,input_file='data/news_cleaned_2018_02_13.csv',output_file='data/news_cleaned_preprocessed_default'):
         self.preprocessor.bulk_preprocess(nrows,input_file,output_file)
 
-    # Logistic model runs on df of text data, not of counter data!
     def run_logistic_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-
-        self.logistic_model = model_logistic_regression()
-        self.logistic_model.test_model(self.train_df,self.val_df)
+        simple_models().logistic_model(self.train_df,self.val_df)
 
     def run_linear_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-
-        self.linear_model = model_linear_regression()
-        self.linear_model.test_model(self.train_df,self.val_df)
+        simple_models().linear_model(self.train_df,self.val_df)
+    
+    def run_dtree_model(self):
+        if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
+            print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
+        simple_models().dtree_model(self.train_df, self.val_df)
+    
+    def run_passagg_model(self):
+        if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
+            print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
+        simple_models().passagg_model(self.train_df, self.val_df)
 
     def load_dataframes(self,train_set=None,val_set=None,test_set=None):
         # Load train, val and test dataframes if they are not already loaded and if their filename is given as arg
@@ -84,3 +89,6 @@ if __name__ == '__main__':
     smalldf = pd.read_csv('data/newssample_preprocessed.csv')
     predictor.load_dataframes('data/news_cleaned_preprocessed_text_train.csv','data/news_cleaned_preprocessed_text_validation.csv') # load small file as training model
     predictor.run_logistic_model()
+    predictor.run_linear_model()
+    predictor.run_dtree_model()
+    predictor.run_passagg_model()
