@@ -171,7 +171,7 @@ class preprocessor():
         plt.grid(axis='y')
         title = f'10000 most common words({when} removing stopwords and stemming)'
         plt.title(title)
-        figname1 = "10000mostcommon"+when+".png"
+        figname1 = "figures/10000mostcommon"+when+".png"
         plt.savefig(figname1)
 
         #create second plot
@@ -184,7 +184,7 @@ class preprocessor():
         plt.grid(axis='y')
         title = f'{n} most common words({when} removing stopwords and stemming)'
         plt.title(title)
-        figname2 = str(n) + "mostcommon"+when+".png"
+        figname2 = "figures/" + str(n) + "mostcommon"+when+".png"
         plt.savefig(figname2)
         print(figname1 + " and " + figname2 + "have been updated")
 
@@ -195,7 +195,7 @@ class preprocessor():
 
 if __name__ == '__main__':
     p = preprocessor()
-    p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_3')
+    p.clean_data()
     p.getStats(p.tokenized,"before")
     p.getStats(p.df['content'],"after")
 
