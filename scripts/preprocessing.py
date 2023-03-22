@@ -194,8 +194,16 @@ class preprocessor():
         
 
 if __name__ == '__main__':
+    pS = preprocessor()
+    pS.read_data('data/newssample.txt')
+    pS.clean_data(pS.df)
+    pS.getStats(pS.tokenized,"before")
+    pS.getStats(pS.df['content'],"after")
+    
     p = preprocessor()
     p.clean_data()
     p.getStats(p.tokenized,"before")
     p.getStats(p.df['content'],"after")
 
+
+    
