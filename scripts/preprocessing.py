@@ -8,29 +8,32 @@ import nltk
 from timeit import default_timer as timer
 from sklearn.model_selection import train_test_split
 #nltk.download('punkt')
+import matplotlib.pyplot as plt
+import numpy as np
+import dataExplorer
 
 class preprocessor():
     def __init__(self):
         pd.options.mode.chained_assignment = None # ignore warnings
         self.ss = SnowballStemmer(language='english')
         self.lemmatizer = WordNetLemmatizer()
-        # Define the cleaning object
+        
         self.cleaner = CleanTransformer(
-            # Modified from clean-texts site:
-            lower=True,                    # lowercase text
-            no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
-            no_urls=True,                  # replace all URLs with a special token
-            no_emails=True,                # replace all email addresses with a special token
-            no_numbers=True,               # replace all numbers with a special token
+
+            lower=True,           
+            no_line_breaks=True,          
+            no_urls=True,               
+            no_emails=True,               
+            no_numbers=True,               
             no_currency_symbols=False,
-            replace_with_url="URLtoken",
-            replace_with_email="EMAILtoken",
+            replace_with_url="urltoken",
+            replace_with_email="emailtoken",
             replace_with_number="numtoken",
             replace_with_currency_symbol="CURtoken",
             no_punct=True,
             lang="en")
 
-    def clean_data(self,df,verbosity=0):
+    def clean_data(self,df,verbosity=0,rm_tail=True):
         starttime = timer()
 
         # Remove rows missing type
@@ -39,6 +42,7 @@ class preprocessor():
         #TODO: Move these to tokenize function instead 
         cleaned = self.cleaner.transform(df['content'])
         tokenized = cleaned.apply(nltk.word_tokenize)
+        self.tokenized = tokenized
         df['content'] = tokenized
         if (verbosity > 0):
             time1 = timer()
@@ -67,7 +71,8 @@ class preprocessor():
             print(f"Saved to df in in {round(time4-time3,3)} seconds")
 
         #Remove tail:
-        self.remove_tail(df['content'])
+        if rm_tail:
+            self.remove_tail(df['content'])
 
         return df
 
@@ -99,7 +104,7 @@ class preprocessor():
     def stem(self,tokens):
         stemmed_words = [self.ss.stem(word) for word in tokens]
         return stemmed_words
-
+    
     def remove_tail(self, counters): #removes words that occur very infrequently
         threshold = counters.shape[0]/100 #words that on average appear in less than 1/100 of the articles
         combined_counts = sum(counters, Counter())
@@ -121,7 +126,7 @@ class preprocessor():
         chunksize = 5000
 
         for chunk in pd.read_csv(input_file, chunksize=chunksize,nrows=nrows,engine='python'):
-            processed_chunk = p.clean_data(chunk,verbosity=1)
+            processed_chunk = self.clean_data(chunk,verbosity=1)
 
             train, remaining = train_test_split(
                 processed_chunk,test_size=0.2,random_state=42
@@ -138,9 +143,16 @@ class preprocessor():
             loaded_chunks += chunksize
             endtime = timer()
             print(f"Done loading {loaded_chunks} rows in {round(endtime-starttime,3)} seconds")
-
-
+        
 
 if __name__ == '__main__':
     p = preprocessor()
     p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_3')
+
+    de = dataExplorer.data_explorer()
+    de.run()
+
+
+
+
+    

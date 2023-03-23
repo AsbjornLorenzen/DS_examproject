@@ -1,0 +1,59 @@
+Special tokens:
+[('numtoken', 180), ('emailtoken', 7), ('urltoken', 115), ('numtokennumtoken', 44), ('numtokennumtokennumtoken', 5)]
+ 
+Length of articles:
+count      250.000000
+mean      4199.396000
+std       4930.997596
+min         58.000000
+25%       1193.500000
+50%       2890.000000
+75%       5295.500000
+90%       8901.000000
+95%      12365.750000
+99%      21593.180000
+max      44599.000000
+Name: articleLength, dtype: float64
+ 
+Domains and their count:
+beforeitsnews.com            155
+canadafreepress.com           24
+washingtonexaminer.com        17
+www.newsmax.com                7
+awarenessact.com               6
+naturalnews.com                5
+strategic-culture.org          4
+willyloman.wordpress.com       4
+christianpost.com              3
+city-journal.org               2
+vdare.com                      2
+undergroundhealth.com          2
+awm.com                        2
+alternet.org                   2
+collectivelyconscious.net      1
+breakpoint.org                 1
+unz.com                        1
+21stcenturywire.com            1
+washingtonsblog.com            1
+barenakedislam.com             1
+charismanews.com               1
+blackagendareport.com          1
+americanlookout.com            1
+anonhq.com                     1
+bipartisanreport.com           1
+breitbart.com                  1
+wallstreetonparade.com         1
+cnnnext.com                    1
+nationalreview.com             1
+Name: domain, dtype: int64
+ 
+Total domains:
+29
+ 
+Column names:
+Index(['Unnamed: 0', 'id', 'domain', 'type', 'url', 'content', 'scraped_at',
+       'inserted_at', 'updated_at', 'title', 'authors', 'keywords',
+       'meta_keywords', 'meta_description', 'tags', 'summary',
+       'articleLength'],
+      dtype='object')
+ 
