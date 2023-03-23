@@ -185,9 +185,14 @@ class preprocessor_to_text():
         ]
         train_df.columns = column_names
         words = train_df['content'].values
-
+        stopwords = open('docs/stopwords.txt').read().split('\n')
         # The important part:
-        self.tf = TfidfVectorizer(stop_words='english',max_df=0.95,min_df=0.05,max_features=500)
+        self.tf = TfidfVectorizer(
+            stop_words=stopwords, # our own stopwords list which was recommended from the course slides
+            strip_accents='ascii',
+            max_df=0.95,
+            min_df=0.05,
+            max_features=2000) # 2000 words
         tfidf_matrix = self.tf.fit_transform(words)
 
         with open('data/tfidf_matrix.pickle', 'wb') as handle:
@@ -236,7 +241,7 @@ class preprocessor_to_text():
         input_filename = 'data/news_cleaned_2018_02_13.csv'
 
         loaded_chunks = 0
-        totn = 9408908 #number of records in corpus
+        totn = 9408908 #number of records in corpus (according to the readme)
         skip = sorted(random.sample(range(totn),totn-n))
         df = pd.read_csv(input_filename,index_col=False,skiprows=skip,engine='python',usecols=range(1,16))
 
@@ -295,7 +300,6 @@ class preprocessor_to_text():
 if __name__ == '__main__':
     p = preprocessor_to_text()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
-    ##p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
-    #p.random_bulk_preprocess(10,'data/newssample.csv','data/news_cleaned_preprocessed_text_random')
-    p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_sk')
-    #p.draw_n_samples(100000)
+    #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
+    #p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_sk')
+    p.draw_n_samples(100000)
