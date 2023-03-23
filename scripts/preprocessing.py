@@ -8,9 +8,6 @@ import nltk
 from timeit import default_timer as timer
 from sklearn.model_selection import train_test_split
 #nltk.download('punkt')
-import matplotlib.pyplot as plt
-import numpy as np
-import dataExplorer
 
 class preprocessor():
     def __init__(self):
@@ -149,10 +146,3 @@ if __name__ == '__main__':
     p = preprocessor()
     p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_3')
 
-    de = dataExplorer.data_explorer()
-    de.run()
-
-
-
-
-    

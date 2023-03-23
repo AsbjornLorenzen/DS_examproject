@@ -98,3 +98,7 @@ class data_explorer():
 
         print("Contents in expl_output updated")
 
+if __name__ == '__main__':
+    de = data_explorer()
+    de.run()
+
