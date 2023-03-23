@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 #nltk.download('punkt')
 import matplotlib.pyplot as plt
 import numpy as np
+import dataExplorer
 
 class preprocessor():
     def __init__(self):
@@ -32,7 +33,7 @@ class preprocessor():
             no_punct=True,
             lang="en")
 
-    def clean_data(self,df,verbosity=0):
+    def clean_data(self,df,verbosity=0,rm_tail=True):
         starttime = timer()
 
         # Remove rows missing type
@@ -50,6 +51,7 @@ class preprocessor():
 
         # Remove stopwords:
         df['content'] = df['content'].apply(self.remove_stopwords)
+        self.step1 = df['content']
         if (verbosity > 0):
             time2 = timer()
             print(f"Vocabulary after removal of stopwords: ",self.get_vocab_size(df))
@@ -57,6 +59,7 @@ class preprocessor():
 
         # Stem:
         df['content'] = df['content'].apply(self.stem)
+        self.step2 = df['content']
         if (verbosity > 0):
             time3 = timer()
             print(f"Vocabulary after stemming: ",self.get_vocab_size(df))
@@ -65,12 +68,14 @@ class preprocessor():
         # Use counter:
         #NOTE: Do we want to save the file as a counter object?
         df['content'] = df['content'].apply(self.to_counter)
+        self.step3 = df['content']
         if (verbosity > 0):
             time4 = timer()
             print(f"Saved to df in in {round(time4-time3,3)} seconds")
 
         #Remove tail:
-        self.remove_tail(df['content'])
+        if rm_tail:
+            self.remove_tail(df['content'])
 
         return df
 
@@ -124,7 +129,7 @@ class preprocessor():
         chunksize = 5000
 
         for chunk in pd.read_csv(input_file, chunksize=chunksize,nrows=nrows,engine='python'):
-            processed_chunk = p.clean_data(chunk,verbosity=1)
+            processed_chunk = self.clean_data(chunk,verbosity=1)
 
             train, remaining = train_test_split(
                 processed_chunk,test_size=0.2,random_state=42
@@ -141,69 +146,13 @@ class preprocessor():
             loaded_chunks += chunksize
             endtime = timer()
             print(f"Done loading {loaded_chunks} rows in {round(endtime-starttime,3)} seconds")
-
-
-
-    def getStats(self,df,when):
-        #Before cleaning
-        #before - pandas series with content before removing stop words and applying stemming
-        words = []
-        [ words.extend(el) for el in df ]
-        
-        c = Counter(words)
-        mostcommon = c.most_common()
-        word, count = zip(*mostcommon)
-        word = list(word)
-        count = list(count)
-        
-        #remove special tokens from words, and add them to the list specialTokens
-        specialTokens = []
-        for sT in ["numtoken","emailtoken","urltoken","numtokennumtoken","numtokennumtokennumtoken"]:
-            index = word.index(sT)
-            specialTokens.append((word[index],count[index]))
-            del word[index]
-            del count[index]
-        print(specialTokens)
-        
-        #create first plot
-        fig, ax = plt.subplots(figsize=(9,7))
-        plt.plot(np.arange((10000)),count[0:10000])
-        plt.grid(axis='y')
-        title = f'10000 most common words({when} removing stopwords and stemming)'
-        plt.title(title)
-        figname1 = "figures/10000mostcommon"+when+".png"
-        plt.savefig(figname1)
-
-        #create second plot
-        #n is number of words to include in plot
-        n = 50
-        fig, ax = plt.subplots(figsize=(9,7))
-        plt.bar(word[0:n],height=count[0:n])
-        plt.xticks(rotation=90)
-        #ax.set_yticks(np.arange(0, 500, 1000))
-        plt.grid(axis='y')
-        title = f'{n} most common words({when} removing stopwords and stemming)'
-        plt.title(title)
-        figname2 = "figures/" + str(n) + "mostcommon"+when+".png"
-        plt.savefig(figname2)
-        print(figname1 + " and " + figname2 + "have been updated")
-
-        #df100A = pd.DataFrame(data={'word': word[0:100], 'count': count[0:100]})
-        #with open('mostcommon100After.txt',"w") as file:
-        #    file.write(df100A.to_string(header=True, index=False))
         
 
 if __name__ == '__main__':
-    pS = preprocessor()
-    pS.read_data('data/newssample.txt')
-    pS.clean_data(pS.df)
-    pS.getStats(pS.tokenized,"before")
-    pS.getStats(pS.df['content'],"after")
-    
-    p = preprocessor()
-    p.clean_data()
-    p.getStats(p.tokenized,"before")
-    p.getStats(p.df['content'],"after")
+    de = dataExplorer.data_explorer()
+    de.run()
+
+
 
 
     
