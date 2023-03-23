@@ -51,7 +51,6 @@ class preprocessor():
 
         # Remove stopwords:
         df['content'] = df['content'].apply(self.remove_stopwords)
-        self.step1 = df['content']
         if (verbosity > 0):
             time2 = timer()
             print(f"Vocabulary after removal of stopwords: ",self.get_vocab_size(df))
@@ -59,7 +58,6 @@ class preprocessor():
 
         # Stem:
         df['content'] = df['content'].apply(self.stem)
-        self.step2 = df['content']
         if (verbosity > 0):
             time3 = timer()
             print(f"Vocabulary after stemming: ",self.get_vocab_size(df))
@@ -68,7 +66,6 @@ class preprocessor():
         # Use counter:
         #NOTE: Do we want to save the file as a counter object?
         df['content'] = df['content'].apply(self.to_counter)
-        self.step3 = df['content']
         if (verbosity > 0):
             time4 = timer()
             print(f"Saved to df in in {round(time4-time3,3)} seconds")
@@ -149,6 +146,9 @@ class preprocessor():
         
 
 if __name__ == '__main__':
+    p = preprocessor()
+    p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_3')
+
     de = dataExplorer.data_explorer()
     de.run()
 
