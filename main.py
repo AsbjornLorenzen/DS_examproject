@@ -82,5 +82,5 @@ class fake_news_predictor():
 if __name__ == '__main__':
     predictor = fake_news_predictor()
     smalldf = pd.read_csv('data/newssample_preprocessed.csv')
-    predictor.load_dataframes('data/news_cleaned_preprocessed_text_train.csv','data/news_cleaned_preprocessed_text_validation.csv') # load small file as training model
+    predictor.load_dataframes('data/news_cleaned_preprocessed_text_sk_train.csv','data/news_cleaned_preprocessed_text_sk_validation.csv') # load small file as training model
     predictor.run_logistic_model()
