@@ -1,5 +1,5 @@
 import pandas as pd
-from scripts import preprocessor
+from scripts import preprocessor, preprocessor_to_text
 from models import simple_models
 import gc
 
@@ -9,9 +9,10 @@ import gc
 #print(df.keys())
 
 class fake_news_predictor():
-    def __init__(self):
+    def __init__(self,dataset):
         print('Initializing fake news predictors...')
         self.preprocessor = preprocessor
+        self.dataset = dataset
 
         # 1 means fake, 0 means true.
         self.type_map = {
@@ -39,37 +40,39 @@ class fake_news_predictor():
     def run_logistic_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-        simple_models().logistic_model(self.train_df,self.val_df)
+        simple_models(self.dataset).logistic_model(self.train_df,self.val_df)
 
     def run_linear_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-        simple_models().linear_model(self.train_df,self.val_df)
+        simple_models(self.dataset).linear_model(self.train_df,self.val_df)
     
     def run_dtree_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-        simple_models().dtree_model(self.train_df, self.val_df)
+        simple_models(self.dataset).dtree_model(self.train_df, self.val_df)
     
     def run_passagg_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-        simple_models().passagg_model(self.train_df, self.val_df)
+        simple_models(self.dataset).passagg_model(self.train_df, self.val_df)
 
-    def load_dataframes(self,train_set=None,val_set=None,test_set=None):
+    def load_dataframes(self,train_set=True,val_set=True,test_set=False):
         # Load train, val and test dataframes if they are not already loaded and if their filename is given as arg
+        dir = 'data/' + self.dataset + '/'
+
         if ((not hasattr(self,'train_df')) and train_set):
-            self.train_df = pd.read_csv(train_set,index_col=False,usecols=range(1,16))
+            self.train_df = pd.read_csv(dir + 'train.csv',index_col=False,usecols=range(1,16))
             self.train_df.columns = self.column_names
             self.train_df['type'] = self.train_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
         if ((not hasattr(self,'val_df')) and val_set):
-            self.val_df = pd.read_csv(val_set,index_col=False,usecols=range(1,16))
+            self.val_df = pd.read_csv(dir + 'validation.csv',index_col=False,usecols=range(1,16))
             self.val_df.columns = self.column_names
             self.val_df['type'] = self.val_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
         if ((not hasattr(self,'test_df')) and test_set):
-            self.test_df = pd.read_csv(test_set,index_col=False,usecols=range(1,16))
+            self.test_df = pd.read_csv(dir + 'test.csv',index_col=False,usecols=range(1,16))
             self.test_df.columns = self.column_names
             self.test_df['type'] = self.test_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
@@ -85,10 +88,9 @@ class fake_news_predictor():
 
 
 if __name__ == '__main__':
-    predictor = fake_news_predictor()
-    smalldf = pd.read_csv('data/newssample_preprocessed.csv')
-    predictor.load_dataframes('data/news_cleaned_preprocessed_text_train.csv','data/news_cleaned_preprocessed_text_validation.csv') # load small file as training model
+    predictor = fake_news_predictor('grapes') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
+    predictor.load_dataframes() # load small file as training model
     predictor.run_logistic_model()
-    predictor.run_linear_model()
-    predictor.run_dtree_model()
-    predictor.run_passagg_model()
+    #predictor.run_linear_model()
+    #predictor.run_dtree_model()
+    #predictor.run_passagg_model()
