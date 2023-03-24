@@ -144,5 +144,5 @@ class preprocessor():
 
 if __name__ == '__main__':
     p = preprocessor()
-    p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_3')
+    p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed')
 
