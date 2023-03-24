@@ -164,6 +164,7 @@ class preprocessor_to_text():
 
     # Starts out by splitting into train, test, val, and then applies preprocessing using only sklearn.
     def bulk_preprocess_sk(self,nrows,input_file,output_name):
+        '''Makes the tfid vector and matrix pickles'''
         print('Preprocessing data...')
         starttime = timer()
         output_dir = self.output_dir(output_name)
