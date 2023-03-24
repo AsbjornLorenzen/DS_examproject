@@ -12,6 +12,8 @@ import random
 import pickle
 import csv
 import sys
+import os
+import glob
 #nltk.download('punkt')
 
 class preprocessor_to_text():
@@ -45,7 +47,6 @@ class preprocessor_to_text():
         # Remove rows missing type
         df = df[ df['type'].notnull() ]
 
-        #TODO: Move these to tokenize function instead 
         cleaned = self.cleaner.transform(df['content'])
         tokenized = cleaned.apply(nltk.word_tokenize)
         df['content'] = tokenized
@@ -82,11 +83,11 @@ class preprocessor_to_text():
         c = Counter(words)
         return len(c)
 
-    def tokenize(self,df):
-        # TODO: Virker ikke endnu, der er noget galt med typerne. Hvis vi har tid kan vi fixe den, ellers fungerer det fint uden.
-        cleaned = self.cleaner.transform(df)
-        tokenized = cleaned.apply(nltk.word_tokenize)
-        return tokenized
+    # Custom tokenization, including stemming, to be used by sklearn
+    def tokenize(self,text):
+        tokenized = nltk.word_tokenize(text)
+        stemmed = self.stem(tokenized)
+        return stemmed
 
     def read_data(self,filename):
         return pd.read_csv(filename)
@@ -113,6 +114,16 @@ class preprocessor_to_text():
 
     def save_df(self,df):
         df.to_csv('data/newssample_preprocessed.csv')   
+
+    def output_dir(self,name):
+        output_dir = 'data/' + name + '/'
+        if os.path.isdir(output_dir):
+            files = glob.glob(output_dir + '*')
+            for f in files:
+                os.remove(f)
+        else:
+            os.mkdir(output_dir)
+        return output_dir
 
     # Splits a dataframe into x and y (where y is 'type'), and splits into train, test, validation sets
     def split_data(self,df):
@@ -152,23 +163,19 @@ class preprocessor_to_text():
     
 
     # Starts out by splitting into train, test, val, and then applies preprocessing using only sklearn.
-    def bulk_preprocess_sk(self,nrows,input_file,output_file):
-        train_output = output_file+'_train.csv'
-        val_output = output_file+'_validation.csv'
-        test_output = output_file+'_test.csv'
-
+    def bulk_preprocess_sk(self,nrows,input_file,output_name):
         print('Preprocessing data...')
         starttime = timer()
-
+        output_dir = self.output_dir(output_name)
         loaded_chunks = 0
         chunksize = 5000
 
         for chunk in pd.read_csv(input_file, chunksize=chunksize,nrows=nrows,engine='python'):
             train, validation, test = self.split_data(chunk)
 
-            train.to_csv(train_output, index=False, header=False)
-            validation.to_csv(val_output, index=False, header=False)
-            test.to_csv(test_output, index=False, header=False)
+            train.to_csv(output_dir+'train.csv', index=False, header=False)
+            validation.to_csv(output_dir+'validation.csv', index=False, header=False)
+            test.to_csv(output_dir+'test.csv', index=False, header=False)
 
             loaded_chunks += chunksize
             endtime = timer()
@@ -176,7 +183,7 @@ class preprocessor_to_text():
         
         # Load train df and fit tfidf:
         # NOTE: If this file is too big, we can read it as a stream and apply tfidf to that, as in https://stackoverflow.com/questions/53754234/creating-a-tfidfvectorizer-over-a-text-column-of-huge-pandas-dataframe 
-        train_df = pd.read_csv(train_output,index_col=False,engine='python',usecols=range(1,16))
+        train_df = pd.read_csv(output_dir+'train.csv',index_col=False,engine='python',usecols=range(1,16))
 
         column_names = [
             'id', 'domain', 'type', 'url', 'content',
@@ -185,18 +192,25 @@ class preprocessor_to_text():
         ]
         train_df.columns = column_names
         words = train_df['content'].values
-
+        stopwords = open('docs/stopwords.txt').read().split('\n')
         # The important part:
-        self.tf = TfidfVectorizer(stop_words='english',max_df=0.95,min_df=0.05,max_features=500)
+        self.tf = TfidfVectorizer(
+            stop_words=stopwords, # our own stopwords list which was recommended from the course slides
+            strip_accents='ascii',
+            tokenizer=self.tokenize,
+            max_df=0.95,
+            min_df=0.05,
+            max_features=2000) # 2000 words
         tfidf_matrix = self.tf.fit_transform(words)
 
-        with open('data/tfidf_matrix.pickle', 'wb') as handle:
+        with open(output_dir + 'tfidf_matrix.pickle', 'wb') as handle:
             pickle.dump(tfidf_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
-        with open('data/tfidf_vectorizer.pickle', 'wb') as handle:
+        with open(output_dir + 'tfidf_vectorizer.pickle', 'wb') as handle:
             pickle.dump(self.tf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def random_bulk_preprocess(self,nrows,input_file,output_file):
+    def random_bulk_preprocess(self,nrows,input_file,output_name):
+        # Applies our custom clean_data to random rows of the df.
         print('Preprocessing data...')
         starttime = timer()
 
@@ -222,9 +236,13 @@ class preprocessor_to_text():
 
         train, validation, test = self.split_data(df)
 
-        train.to_csv(output_file+'_train.csv', mode='a', index=False, header=False)
-        validation.to_csv(output_file+'_validation.csv', mode='a', index=False, header=False)
-        test.to_csv(output_file+'_test.csv', mode='a', index=False, header=False)
+
+        output_file = self.output_dir(output_name)
+        print(output_file)
+
+        train.to_csv(output_file+'train.csv', mode='a', index=False, header=False)
+        validation.to_csv(output_file+'validation.csv', mode='a', index=False, header=False)
+        test.to_csv(output_file+'test.csv', mode='a', index=False, header=False)
 
         endtime = timer()
         print(f"Done loading {s} rows in {round(endtime-starttime,3)} seconds")
@@ -236,7 +254,7 @@ class preprocessor_to_text():
         input_filename = 'data/news_cleaned_2018_02_13.csv'
 
         loaded_chunks = 0
-        totn = 9408908 #number of records in corpus
+        totn = 9408908 #number of records in corpus (according to the readme)
         skip = sorted(random.sample(range(totn),totn-n))
         df = pd.read_csv(input_filename,index_col=False,skiprows=skip,engine='python',usecols=range(1,16))
 
@@ -295,7 +313,6 @@ class preprocessor_to_text():
 if __name__ == '__main__':
     p = preprocessor_to_text()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
-    ##p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
-    #p.random_bulk_preprocess(10,'data/newssample.csv','data/news_cleaned_preprocessed_text_random')
-    p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_sk')
+    #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
+    p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','grapes')
     #p.draw_n_samples(100000)

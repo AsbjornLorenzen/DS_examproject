@@ -6,10 +6,12 @@ from sklearn.feature_extraction.text import CountVectorizer
 import pandas as pd
 from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
 import numpy as np
+import pickle
 
 class simple_models():
-    def __init__(self):
+    def __init__(self,dataset):
         self.cv = CountVectorizer(binary=False,max_df=0.95)
+        self.dataset = dataset # Needed when we need to load more than just the train/test/val csv files
     
     def logistic_model(self, train_df, val_df):
         self.model = LogisticRegression(max_iter=1500)
@@ -35,7 +37,7 @@ class simple_models():
     def test_model(self,train_df,val_df):
         x_train, y_train = self.split_x_y(train_df)
         x_val, y_val = self.split_x_y(val_df)
-        train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val)
+        train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val,mode='tfidf')
         self.fit(train_feature_set,y_train)
         self.pred(val_feature_set,y_val)
 
@@ -45,12 +47,25 @@ class simple_models():
         x = df.drop(['type'],axis=1)
         return x, y
     
-    # Makes count vectoriser of desired field, and returns the features.
+    # Makes count vectoriser or tfidf of desired field, and returns the features.
     # These features should be used to train the model.
-    def get_feature_set(self,x_train,x_test,field='content'):
-        self.cv.fit_transform(x_train[field].values)
-        train_feat = self.cv.transform(x_train[field].values)
-        test_feat = self.cv.transform(x_test[field].values)
+    def get_feature_set(self,x_train,x_test,mode='cv',field='content'):
+        if mode == 'cv':
+             self.cv.fit_transform(x_train[field].values)
+             train_feat = self.cv.transform(x_train[field].values)
+             test_feat = self.cv.transform(x_test[field].values)
+        elif mode == 'tfidf':
+            # Does not use field arg, since the preprocessed tfidf only works with content (text)
+            dir = 'data/' + self.dataset + '/'
+            try:
+                with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
+                    self.tfidf = pickle.load(handle)
+                with open(dir + 'tfidf_matrix.pickle', 'rb') as handle:
+                    self.tfidf_matrix = pickle.load(handle)
+            except Exception as e:
+                print('Remember to create the tfidf pickle files before running with the tfidf model!\n',e)
+            train_feat = self.tfidf_matrix
+            test_feat = self.tfidf.transform(x_test['content'].values)
         return train_feat, test_feat
 
     def fit(self,x_train,y_train):
