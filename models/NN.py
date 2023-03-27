@@ -64,20 +64,21 @@ class NN_model():
         
         #define the model and its neural net layers (setting name to 'NNmodel')
         ##måske add conv1d, globalmaxpooling1d lag efter embedding
-        vectorize_layer = layers.TextVectorization(max_tokens=5000,output_mode='int',standardize=None) 
+        vectorize_layer = layers.TextVectorization(max_tokens=5000,output_mode='int')#,standardize=None 
         vectorize_layer.adapt(train_set.batch(64))
         vocab_size = len(vectorize_layer.get_vocabulary())
         print(vocab_size)
 
         self.model = tf.keras.models.Sequential()
-        self.model.add(tf.keras.Input(shape=(1,), dtype=tf.string))#input layer necessary for defining shape and type of input
+        #self.model.add(tf.keras.Input(shape=(1,), dtype=tf.string))#input layer necessary for defining shape and type of input
         self.model.add(vectorize_layer)
-        self.model.add(layers.Embedding(input_dim=vocab_size, output_dim=128))
+        self.model.add(layers.Embedding(input_dim=vocab_size, output_dim=32))
         self.model.add(layers.GlobalAveragePooling1D())
+        self.model.add(layers.Dense(activation='relu',units=40)) #Relu is great when a lot of inputs are zero
+        self.model.add(layers.Dense(activation='relu',units=20)) #Relu is great when a lot of inputs are zero
         self.model.add(layers.Dense(activation='relu',units=10)) #Relu is great when a lot of inputs are zero
-
-        self.model.add(layers.Dropout(0.20)) #used to prevent overfitting
-        self.model.add(layers.Dense(activation='relu',units=1))
+        #self.model.add(layers.Dropout(0.05)) #used to prevent overfitting
+        self.model.add(layers.Dense(activation='sigmoid',units=1))
 
         self.model.summary()
         #f = open("model_outputs/NN_model_output.txt","a")
@@ -85,11 +86,11 @@ class NN_model():
         #f.close()
 
         #compile model(with stochastic gradient descent and the binary cross entropy loss function)
-        self.model.compile(optimizer='SGD',loss='binary_crossentropy',metrics=['accuracy'])
+        self.model.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
 
         #fit on vectorized content and adjust according to performance on validation data
         #avoid overfitting by keeping number of epochs relatively low
-        self.model.fit(x=train_x_tensor, y=train_y_tensor, epochs=3, batch_size=64, validation_data=(val_x_tensor,val_y_tensor)) #adjust to 100 and 2500
+        self.model.fit(x=train_x_tensor, y=train_y_tensor, epochs=6, batch_size=64, validation_data=(val_x_tensor,val_y_tensor)) #adjust to 100 and 2500
 
         #predict on vectorized testdata data
         results = self.model.evaluate(test_x_tensor,test_y_tensor,batch_size=64)
