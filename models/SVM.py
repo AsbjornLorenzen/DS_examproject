@@ -9,19 +9,19 @@ from sklearn.model_selection import GridSearchCV
 class SVM():
     def __init__(self, dataset):
         self.dataset = dataset # Needed when we need to load more than just the train/test/val csv files
-        self.model = SVC(kernel="linear")
+        self.model = SVC()
 
     def SV_model(self, train_df, val_df):
         x_train, y_train = self.split_x_y(train_df)
         x_val, y_val = self.split_x_y(val_df)
         train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val)
-
         self.hyp_tuning(train_feature_set, y_train)
-        self.fit(train_feature_set,y_train)
-        self.pred(val_feature_set,y_val)
+        #self.fit(train_feature_set,y_train)
+        #self.pred(val_feature_set,y_val)
     
     def hyp_tuning(self, train_feature_set, y_train): # Optimization of hyperparameters
-        hyperparameters = {'C': [0.1, 1, 10], 'kernel': ['linear', 'poly', 'rbf'], 'gamma': [0.01, 0.1, 1]}
+        print("Beginning hyperparameter optimization...")
+        hyperparameters = {'kernel': ['linear', 'poly', 'rbf']}
         # perform a grid search over the parameter grid
         grid_search = GridSearchCV(self.model, hyperparameters, cv=5)
         grid_search.fit(train_feature_set, y_train)

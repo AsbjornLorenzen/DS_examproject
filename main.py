@@ -103,8 +103,8 @@ class fake_news_predictor():
 if __name__ == '__main__':
     predictor = fake_news_predictor('apples') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
     predictor.load_dataframes() # load small file as training model
-    #predictor.run_nbayes_model()
     predictor.run_SVM_model()
+    #predictor.run_nbayes_model()
     #predictor.run_linear_model()
     #predictor.run_dtree_model()
     #predictor.run_passagg_model()
