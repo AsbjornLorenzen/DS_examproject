@@ -26,7 +26,7 @@ class SVM():
         grid_search = GridSearchCV(self.model, hyperparameters, cv=5)
         grid_search.fit(train_feature_set, y_train)
         # print the best hyperparameters
-        print('Optimal parameters: ' + grid_search.best_params_)
+        print("Best hyperparameters: ", grid_search.best_params_)
         print("Training accuracy with best hyperparameters: ", grid_search.best_score_)
     
     # Makes tfidf of desired field, and returns the features.
