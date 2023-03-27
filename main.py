@@ -1,6 +1,7 @@
 import pandas as pd
 from scripts import preprocessor, preprocessor_to_text
 from models import simple_models, NN
+from models import naive_bayes
 import gc
 
 
@@ -41,6 +42,7 @@ class fake_news_predictor():
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
         simple_models(self.dataset).logistic_model(self.train_df,self.val_df)
+        print(self.train_df.shape)
 
     def run_linear_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
@@ -56,7 +58,12 @@ class fake_news_predictor():
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
         simple_models(self.dataset).passagg_model(self.train_df, self.val_df)
-    
+        
+    def run_nbayes_model(self):
+        if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
+            print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
+        naive_bayes(self.dataset).naive_bayes_model(self.train_df, self.val_df)
+
     def run_NN_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
@@ -82,22 +89,23 @@ class fake_news_predictor():
             self.test_df.columns = self.column_names
             self.test_df['type'] = self.test_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
-
     # Remove dataframes from memory. Useful if we want to explicitly load a new dataset
     def remove_dataframes(self):
-        del self.train_df
-        del self.val_df
-        del self.test_df
-
+        if (hasattr(self,'train_df')):
+            del self.train_df
+        if (hasattr(self,'val_df')):
+            del self.val_df
+        if (hasattr(self,'test_df')):
+            del self.test_df
         # Run garbage collector to erase from memory
         gc.collect()
 
-
 if __name__ == '__main__':
-    predictor = fake_news_predictor('grapes') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
+    predictor = fake_news_predictor('apples') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
     predictor.load_dataframes(test_set=True) # load small file as training model
-    #predictor.run_logistic_model()
+    #predictor.run_nbayes_model()
     predictor.run_NN_model()
+    #predictor.run_logistic_model()
     #predictor.run_linear_model()
     #predictor.run_dtree_model()
     #predictor.run_passagg_model()
