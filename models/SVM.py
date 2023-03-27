@@ -9,21 +9,27 @@ from sklearn.model_selection import GridSearchCV
 class SVM():
     def __init__(self, dataset):
         self.dataset = dataset # Needed when we need to load more than just the train/test/val csv files
-        self.model = SVC()
+        self.model = SVC(kernel='rbf')
 
     def SV_model(self, train_df, val_df):
         x_train, y_train = self.split_x_y(train_df)
         x_val, y_val = self.split_x_y(val_df)
         train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val)
-        self.hyp_tuning(train_feature_set, y_train)
-        #self.fit(train_feature_set,y_train)
-        #self.pred(val_feature_set,y_val)
+        #self.hyp_tuning(train_feature_set, y_train)
+        self.fit(train_feature_set,y_train)
+        self.pred(val_feature_set,y_val)
     
     def hyp_tuning(self, train_feature_set, y_train): # Optimization of hyperparameters
         print("Beginning hyperparameter optimization...")
-        hyperparameters = {'kernel': ['linear', 'poly', 'rbf']}
+        hyperparameters = {
+            'C': [0.1, 1, 10, 100],
+            #'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
+            'degree': [2, 3, 4],
+            'gamma': ['scale', 'auto'] + [0.1, 1, 10],
+            'coef0': [-1, 0, 1]
+        }
         # perform a grid search over the parameter grid
-        grid_search = GridSearchCV(self.model, hyperparameters, cv=5)
+        grid_search = GridSearchCV(self.model, hyperparameters, cv=5, n_jobs=-1, verbose=1, scoring='accuracy')
         grid_search.fit(train_feature_set, y_train)
         # print the best hyperparameters
         print("Best hyperparameters: ", grid_search.best_params_)

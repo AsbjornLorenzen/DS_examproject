@@ -60,7 +60,7 @@ class simple_models():
             try:
                 with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
                     self.tfidf = pickle.load(handle)
-                with open(dir + 'tfidf_matrix.pickle', 'rb') as handle:
+                with open(dir + 'tfidf_train_matrix.pickle', 'rb') as handle:
                     self.tfidf_matrix = pickle.load(handle)
             except Exception as e:
                 print('Remember to create the tfidf pickle files before running with the tfidf model!\n',e)

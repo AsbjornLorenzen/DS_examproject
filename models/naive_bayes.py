@@ -14,8 +14,7 @@ class naive_bayes():
         x_train, y_train = self.split_x_y(train_df)
         x_val, y_val = self.split_x_y(val_df)
         train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val)
-
-        self.hyp_tuning(train_feature_set, y_train)
+        #self.hyp_tuning(train_feature_set, y_train)
         self.fit(train_feature_set,y_train)
         self.pred(val_feature_set,y_val)
     
@@ -25,7 +24,7 @@ class naive_bayes():
         grid_search = GridSearchCV(self.model, param_grid, cv=5)
         grid_search.fit(train_feature_set, y_train)
         # print the best hyperparameters
-        print('Optimal parameters: ' + grid_search.best_params_)
+        print("Best hyperparameters: ", grid_search.best_params_)
 
     # Makes tfidf of desired field, and returns the features.
     # These features should be used to train the model.
