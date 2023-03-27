@@ -173,9 +173,9 @@ class preprocessor_to_text():
         for chunk in pd.read_csv(input_file, chunksize=chunksize,nrows=nrows,engine='python'):
             train, validation, test = self.split_data(chunk)
 
-            train.to_csv(output_dir+'train.csv', index=False, header=False)
-            validation.to_csv(output_dir+'validation.csv', index=False, header=False)
-            test.to_csv(output_dir+'test.csv', index=False, header=False)
+            train.to_csv(output_dir+'train.csv', mode='a',index=False, header=False)
+            validation.to_csv(output_dir+'validation.csv', mode='a', index=False, header=False)
+            test.to_csv(output_dir+'test.csv', index=False, mode='a',header=False)
 
             loaded_chunks += chunksize
             endtime = timer()
@@ -184,14 +184,13 @@ class preprocessor_to_text():
         # Load train df and fit tfidf:
         # NOTE: If this file is too big, we can read it as a stream and apply tfidf to that, as in https://stackoverflow.com/questions/53754234/creating-a-tfidfvectorizer-over-a-text-column-of-huge-pandas-dataframe 
         train_df = pd.read_csv(output_dir+'train.csv',index_col=False,engine='python',usecols=range(1,16))
-
         column_names = [
             'id', 'domain', 'type', 'url', 'content',
             'scraped_at', 'inserted_at', 'updated_at', 'title', 'authors',
             'keywords', 'meta_keywords', 'meta_description', 'tags', 'summary'
         ]
         train_df.columns = column_names
-        words = train_df['content'].values
+        train_words = train_df['content'].values
         stopwords = open('docs/stopwords.txt').read().split('\n')
         # The important part:
         self.tf = TfidfVectorizer(
@@ -201,10 +200,10 @@ class preprocessor_to_text():
             max_df=0.95,
             min_df=0.05,
             max_features=2000) # 2000 words
-        tfidf_matrix = self.tf.fit_transform(words)
+        tfidf_train_matrix = self.tf.fit_transform(train_words)
 
-        with open(output_dir + 'tfidf_matrix.pickle', 'wb') as handle:
-            pickle.dump(tfidf_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(output_dir + 'tfidf_train_matrix.pickle', 'wb') as handle:
+            pickle.dump(tfidf_train_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
     
         with open(output_dir + 'tfidf_vectorizer.pickle', 'wb') as handle:
             pickle.dump(self.tf, handle, protocol=pickle.HIGHEST_PROTOCOL)
@@ -314,5 +313,5 @@ if __name__ == '__main__':
     p = preprocessor_to_text()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
     #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
-    p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','grapes')
+    p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','apples')
     #p.draw_n_samples(100000)

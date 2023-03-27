@@ -49,11 +49,11 @@ class simple_models():
     
     # Makes count vectoriser or tfidf of desired field, and returns the features.
     # These features should be used to train the model.
-    def get_feature_set(self,x_train,x_test,mode='cv',field='content'):
+    def get_feature_set(self,x_train,x_val,mode='cv',field='content'):
         if mode == 'cv':
              self.cv.fit_transform(x_train[field].values)
              train_feat = self.cv.transform(x_train[field].values)
-             test_feat = self.cv.transform(x_test[field].values)
+             test_feat = self.cv.transform(x_val[field].values)
         elif mode == 'tfidf':
             # Does not use field arg, since the preprocessed tfidf only works with content (text)
             dir = 'data/' + self.dataset + '/'
@@ -65,7 +65,7 @@ class simple_models():
             except Exception as e:
                 print('Remember to create the tfidf pickle files before running with the tfidf model!\n',e)
             train_feat = self.tfidf_matrix
-            test_feat = self.tfidf.transform(x_test['content'].values)
+            test_feat = self.tfidf.transform(x_val['content'].values)
         return train_feat, test_feat
 
     def fit(self,x_train,y_train):
