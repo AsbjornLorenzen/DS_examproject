@@ -15,16 +15,18 @@ class naive_bayes():
         x_val, y_val = self.split_x_y(val_df)
         train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val)
 
+        self.hyp_tuning(train_feature_set, y_train)
+        self.fit(train_feature_set,y_train)
+        self.pred(val_feature_set,y_val)
+    
+    def hyp_tuning(self, train_feature_set, y_train): # Optimization of hyperparameters
         param_grid = {'alpha': [0.001, 0.1, 1.0, 10.0]} #alpha parameter is used to handle zero probabilities in the data
         # perform a grid search over the parameter grid
         grid_search = GridSearchCV(self.model, param_grid, cv=5)
         grid_search.fit(train_feature_set, y_train)
         # print the best hyperparameters
-        print(grid_search.best_params_)
+        print('Optimal parameters: ' + grid_search.best_params_)
 
-        self.fit(train_feature_set,y_train)
-        self.pred(val_feature_set,y_val)
-    
     # Makes tfidf of desired field, and returns the features.
     # These features should be used to train the model.
     def get_feature_set(self, x_train, x_val):
