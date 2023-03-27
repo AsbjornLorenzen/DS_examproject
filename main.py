@@ -70,7 +70,7 @@ class fake_news_predictor():
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
         SVM(self.dataset).SV_model(self.train_df, self.val_df)
 
-    def load_dataframes(self,train_set=True,val_set=True,test_set=False):
+    def load_dataframes(self,train_set=True,val_set=True,test_set=False,liar=False):
         # Load train, val and test dataframes if they are not already loaded and if their filename is given as arg
         dir = 'data/' + self.dataset + '/'
 
@@ -88,6 +88,9 @@ class fake_news_predictor():
             self.test_df = pd.read_csv(dir + 'test.csv',index_col=False,usecols=range(1,16))
             self.test_df.columns = self.column_names
             self.test_df['type'] = self.test_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
+        
+        if (liar):
+            self.liar = pd.read_csv('data/liar.csv')
 
     # Remove dataframes from memory. Useful if we want to explicitly load a new dataset
     def remove_dataframes(self):

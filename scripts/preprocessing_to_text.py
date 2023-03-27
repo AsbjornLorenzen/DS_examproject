@@ -8,7 +8,7 @@ import nltk
 from timeit import default_timer as timer
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import TfidfVectorizer
-import random
+from random import random
 import pickle
 import csv
 import sys
@@ -208,103 +208,89 @@ class preprocessor_to_text():
         with open(output_dir + 'tfidf_vectorizer.pickle', 'wb') as handle:
             pickle.dump(self.tf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def random_bulk_preprocess(self,nrows,input_file,output_name):
-        # Applies our custom clean_data to random rows of the df.
-        print('Preprocessing data...')
-        starttime = timer()
-
-        loaded_chunks = 0
-        n = 1000 #number of records in file
-        s = nrows #desired sample size
-        skip = sorted(random.sample(range(n),n-s))
-        df = pd.read_csv(input_file,index_col=False,skiprows=skip,engine='python',usecols=range(1,16))
-
-        column_names = [
-            'id', 'domain', 'type', 'url', 'content',
-            'scraped_at', 'inserted_at', 'updated_at', 'title', 'authors',
-            'keywords', 'meta_keywords', 'meta_description', 'tags', 'summary'
-        ]
-
-        df.columns = column_names
-
-        print(df.iloc[3])
-        
-        df = p.clean_data(df,verbosity=1)
-        print('Done reading file...')
-        print(df.columns)
-
-        train, validation, test = self.split_data(df)
-
-
-        output_file = self.output_dir(output_name)
-        print(output_file)
-
-        train.to_csv(output_file+'train.csv', mode='a', index=False, header=False)
-        validation.to_csv(output_file+'validation.csv', mode='a', index=False, header=False)
-        test.to_csv(output_file+'test.csv', mode='a', index=False, header=False)
-
-        endtime = timer()
-        print(f"Done loading {s} rows in {round(endtime-starttime,3)} seconds")
-
-    # Creates a csv of n articles chosen at random from the corpus.
-    def draw_n_samples(self,n):
-        print(f"Drawing {n} samples...")
-        starttime = timer()
-        input_filename = 'data/news_cleaned_2018_02_13.csv'
-
-        loaded_chunks = 0
+    def reservoir_sample(self,n):
+        print(f"Drawing approximately {n} samples using reservoir sampling...")
         totn = 9408908 #number of records in corpus (according to the readme)
-        skip = sorted(random.sample(range(totn),totn-n))
-        df = pd.read_csv(input_filename,index_col=False,skiprows=skip,engine='python',usecols=range(1,16))
+        input_filename = 'data/news_cleaned_2018_02_13.csv'
+        output_filename = 'data/corpus_' + str(n) + '_reservoir.csv'
+        try:
+            os.remove(output_filename)
+        except:
+            pass
+        starttime = timer()
+        chance = n / totn
+        chunksize = 10000
+        loaded_chunks = 0
+        loaded_lines = 0
 
+        # Randomly selects elements from one chunk at a time
+        for chunk in pd.read_csv(input_filename, chunksize=chunksize,nrows=totn,engine='python'):
+            append_idx = []
+            try:
+                for idx in range(chunksize-1):
+                    if random() < chance:
+                        append_idx.append(idx)
+
+                df = chunk.take(append_idx)
+                column_names = [
+                    '','id', 'domain', 'type', 'url', 'content',
+                    'scraped_at', 'inserted_at', 'updated_at', 'title', 'authors',
+                    'keywords', 'meta_keywords', 'meta_description', 'tags', 'summary',''
+                ]
+                df.columns = column_names
+                # Remove rows missing type and content fields
+                df = df[ df['type'].notnull() ]
+                df = df[ df['type'] != 'unknown' ]
+                df = df[ df['content'].notnull() ]
+                df.to_csv(output_filename, mode='a', index=False, header=False)
+                loaded_lines += len(append_idx)
+                loaded_chunks += 1
+
+                endtime = timer()
+                print(f"Done loading {loaded_lines} rows in {round(endtime-starttime,3)} seconds")
+            except Exception as e:
+                print('Something went wrong while reading chunk ',loaded_chunks,e)
         time2 = timer()
-        num_loaded = df.shape[0]
-        print(f"Loaded {num_loaded} articles in {time2-starttime} seconds")
+        print(f"Loaded {n} articles in {time2-starttime} seconds")
 
-        column_names = [
-            'id', 'domain', 'type', 'url', 'content',
-            'scraped_at', 'inserted_at', 'updated_at', 'title', 'authors',
-            'keywords', 'meta_keywords', 'meta_description', 'tags', 'summary'
-        ]
-        df.columns = column_names
-
-
-        output_filename = 'corpustest.csv'
-        df.to_csv(output_filename, index=False)
-
-        # Remove rows missing type and content fields
-        df = df[ df['type'].notnull() ]
-        df = df[ df['type'] != 'unknown' ]
-        df = df[ df['content'].notnull() ]
-
-        new_size = df.shape[0]
-
-        time3 = timer()
-        print(f"Removed {num_loaded-new_size} articles with junk data in {time3-time2} seconds")
-
-        output_filename = 'data/corpus_' + str(new_size) + '_random.csv'
-        df.to_csv(output_filename, index=False)
+    # Converts LIAR to a dataset with 'content' and 'type' columns, so it can be loaded by the same models 
+    def load_liar(self,filename):
+        type_map = {
+            'pants-fire':1, 
+            'false':1, 
+            'barely-true':1,
+            'half-true':1,
+            'mostly-true':0,
+            'true':0
+        }
+        df = pd.read_table(filename)
+        output_df = pd.DataFrame(columns=['type','content'])
+        types = df.iloc[:,1].map(type_map)
+        text = df.iloc[:,2]
+        output_df['type'] = types
+        output_df['content'] = text
+        output_df.to_csv('data/liar.csv')
 
 
-"""         
-        # Split into x and y sets and save
-        train_y = train['type'].values
-        train_x = train.drop(['type'],axis=1)
+        """         
+                # Split into x and y sets and save
+                train_y = train['type'].values
+                train_x = train.drop(['type'],axis=1)
 
-        test_y = test['type'].values
-        test_x = test.drop(['type'],axis=1)
+                test_y = test['type'].values
+                test_x = test.drop(['type'],axis=1)
 
-        val_y = validation['type'].values
-        val_x = validation.drop(['type'],axis=1)
+                val_y = validation['type'].values
+                val_x = validation.drop(['type'],axis=1)
 
-        print(f"Columns from train: {train_x.columns} test: {test_x.columns} val: {val_x.columns}")
+                print(f"Columns from train: {train_x.columns} test: {test_x.columns} val: {val_x.columns}")
 
-        train_y.to_csv(output_file+'_train_y.csv', index=False)
-        train_x.to_csv(output_file+'_train_x.csv', index=False)
-        test_y.to_csv(output_file+'_test_y.csv', index=False)
-        test_x.to_csv(output_file+'_test_x.csv', index=False)
-        val_y.to_csv(output_file+'_val_y.csv', index=False)
-        val_x.to_csv(output_file+'_val_x.csv', index=False) """
+                train_y.to_csv(output_file+'_train_y.csv', index=False)
+                train_x.to_csv(output_file+'_train_x.csv', index=False)
+                test_y.to_csv(output_file+'_test_y.csv', index=False)
+                test_x.to_csv(output_file+'_test_x.csv', index=False)
+                val_y.to_csv(output_file+'_val_y.csv', index=False)
+                val_x.to_csv(output_file+'_val_x.csv', index=False) """
 
 
         
@@ -315,3 +301,6 @@ if __name__ == '__main__':
     #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
     p.bulk_preprocess_sk(80000,'data/corpus_100000_reservoir.csv','melons')
     #p.draw_n_samples(100000)
+    p.reservoir_sample(100000)
+    #p.load_liar('data/train_liar.tsv')
+
