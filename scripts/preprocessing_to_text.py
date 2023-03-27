@@ -211,8 +211,8 @@ class preprocessor_to_text():
     def reservoir_sample(self,n):
         print(f"Drawing approximately {n} samples using reservoir sampling...")
         totn = 9408908 #number of records in corpus (according to the readme)
-        input_filename = '/Users/asbjorn/Datalogi/datascience/DS_examproject/data/news_cleaned_2018_02_13.csv'
-        output_filename = '/Users/asbjorn/Datalogi/datascience/DS_examproject/data/corpus_' + str(n) + '_reservoir.csv'
+        input_filename = 'data/news_cleaned_2018_02_13.csv'
+        output_filename = 'data/corpus_' + str(n) + '_reservoir.csv'
         try:
             os.remove(output_filename)
         except:
