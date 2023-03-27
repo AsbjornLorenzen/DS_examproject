@@ -315,5 +315,5 @@ if __name__ == '__main__':
     p = preprocessor_to_text()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
     #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
-    p.bulk_preprocess_sk(10000,'data/news_cleaned_2018_02_13.csv','grapes')
+    p.bulk_preprocess_sk(1000,'data/news_cleaned_2018_02_13.csv','grapes')
     #p.draw_n_samples(100000)

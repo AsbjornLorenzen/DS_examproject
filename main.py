@@ -60,7 +60,8 @@ class fake_news_predictor():
     def run_NN_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-        NN(self.dataset).use(self.train_df, self.val_df)
+        NNmodel = NN.NN_model(self.dataset)
+        NNmodel.use(self.train_df, self.val_df,self.test_df)
 
     def load_dataframes(self,train_set=True,val_set=True,test_set=False):
         # Load train, val and test dataframes if they are not already loaded and if their filename is given as arg
@@ -94,8 +95,8 @@ class fake_news_predictor():
 
 if __name__ == '__main__':
     predictor = fake_news_predictor('grapes') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
-    predictor.load_dataframes() # load small file as training model
-    predictor.run_logistic_model()
+    predictor.load_dataframes(test_set=True) # load small file as training model
+    #predictor.run_logistic_model()
     predictor.run_NN_model()
     #predictor.run_linear_model()
     #predictor.run_dtree_model()
