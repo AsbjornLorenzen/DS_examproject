@@ -1,6 +1,6 @@
 import pandas as pd
 from scripts import preprocessor, preprocessor_to_text
-from models import simple_models, NN
+from models import simple_models#, NN
 from models import naive_bayes
 from models import SVM
 import gc
@@ -81,17 +81,17 @@ class fake_news_predictor():
         dir = 'data/' + self.dataset + '/'
 
         if ((not hasattr(self,'train_df')) and train_set):
-            self.train_df = pd.read_csv(dir + 'train.csv',index_col=False,usecols=range(1,16))
+            self.train_df = pd.read_csv(dir + 'train.csv',index_col=False)#,usecols=range(1,16))
             self.train_df.columns = self.column_names
             self.train_df['type'] = self.train_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
         if ((not hasattr(self,'val_df')) and val_set):
-            self.val_df = pd.read_csv(dir + 'validation.csv',index_col=False,usecols=range(1,16))
+            self.val_df = pd.read_csv(dir + 'validation.csv',index_col=False)#,usecols=range(1,16))
             self.val_df.columns = self.column_names
             self.val_df['type'] = self.val_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
         if ((not hasattr(self,'test_df')) and test_set):
-            self.test_df = pd.read_csv(dir + 'test.csv',index_col=False,usecols=range(1,16))
+            self.test_df = pd.read_csv(dir + 'test.csv',index_col=False)#,usecols=range(1,16))
             self.test_df.columns = self.column_names
             self.test_df['type'] = self.test_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
         
@@ -110,15 +110,15 @@ class fake_news_predictor():
         gc.collect()
 
 if __name__ == '__main__':
-    predictor = fake_news_predictor('apples') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
-    predictor.load_dataframes(test_set=True) # load small file as training model
+    predictor = fake_news_predictor('word2vectest6_no_tfidf_tuned_cbow') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
+    predictor.load_dataframes(test_set=False) # load small file as training model
 
 
     #predictor.run_linear_model()
     #predictor.run_dtree_model()
     #predictor.run_passagg_model()
     #predictor.run_nbayes_model()
-    predictor.run_NN_model()
+    #predictor.run_NN_model()
     #predictor.run_logistic_model()
-    #predictor.run_SVM_model()
+    predictor.run_SVM_model()
 

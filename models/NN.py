@@ -1,5 +1,5 @@
 import tensorflow as tf
-#from tensorflow import keras
+from tensorflow import keras
 from keras import layers
 from sklearn.feature_extraction.text import CountVectorizer
 from models import simple_models
