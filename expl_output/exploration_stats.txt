@@ -1,59 +1,111 @@
 Special tokens:
-[('numtoken', 180), ('emailtoken', 7), ('urltoken', 115), ('numtokennumtoken', 44), ('numtokennumtokennumtoken', 5)]
+[('numtoken', 175), ('emailtoken', 7), ('urltoken', 114), ('numtokennumtoken', 42), ('numtokennumtokennumtoken', 5)]
+ 
+Type counts:
+fake          155
+conspiracy     31
+political      23
+NaN            12
+unreliable      6
+bias            6
+junksci         6
+unknown         6
+reliable        3
+clickbait       1
+hate            1
+Name: type, dtype: int64
+ 
+Fake mean:
+0.853448275862069
  
 Length of articles:
-count      250.000000
-mean      4199.396000
-std       4930.997596
-min         58.000000
-25%       1193.500000
-50%       2890.000000
-75%       5295.500000
-90%       8901.000000
-95%      12365.750000
-99%      21593.180000
-max      44599.000000
+count      232.00
+mean      4026.18
+std       4250.43
+min         58.00
+25%       1201.50
+50%       2910.00
+75%       5089.75
+90%       8742.90
+95%      11704.65
+99%      21005.02
+max      27901.00
 Name: articleLength, dtype: float64
  
 Domains and their count:
 beforeitsnews.com            155
 canadafreepress.com           24
 washingtonexaminer.com        17
-www.newsmax.com                7
 awarenessact.com               6
 naturalnews.com                5
-strategic-culture.org          4
-willyloman.wordpress.com       4
 christianpost.com              3
-city-journal.org               2
-vdare.com                      2
-undergroundhealth.com          2
 awm.com                        2
+vdare.com                      2
 alternet.org                   2
-collectivelyconscious.net      1
+city-journal.org               2
+barenakedislam.com             1
 breakpoint.org                 1
+collectivelyconscious.net      1
+charismanews.com               1
+blackagendareport.com          1
+nationalreview.com             1
 unz.com                        1
 21stcenturywire.com            1
 washingtonsblog.com            1
-barenakedislam.com             1
-charismanews.com               1
-blackagendareport.com          1
+bipartisanreport.com           1
+cnnnext.com                    1
 americanlookout.com            1
 anonhq.com                     1
-bipartisanreport.com           1
 breitbart.com                  1
-wallstreetonparade.com         1
-cnnnext.com                    1
-nationalreview.com             1
 Name: domain, dtype: int64
  
 Total domains:
-29
+24
+ 
+Domains count, average length and fake-label:
+                           domainCount  fake  articleLength
+domain                                                     
+beforeitsnews.com                  155   1.0    4105.096774
+canadafreepress.com                 24   1.0    5832.416667
+washingtonexaminer.com              17   0.0    3231.764706
+awarenessact.com                     6   1.0    2160.166667
+naturalnews.com                      5   1.0    2838.800000
+christianpost.com                    3   0.0    2611.666667
+vdare.com                            2   1.0    3439.500000
+awm.com                              2   0.0    2848.000000
+alternet.org                         2   0.0   15134.000000
+city-journal.org                     2   0.0     117.000000
+unz.com                              1   1.0    1621.000000
+nationalreview.com                   1   0.0    3994.000000
+collectivelyconscious.net            1   1.0      99.000000
+cnnnext.com                          1   0.0    3027.000000
+21stcenturywire.com                  1   1.0    1025.000000
+charismanews.com                     1   1.0    3991.000000
+breitbart.com                        1   0.0    2390.000000
+breakpoint.org                       1   0.0     151.000000
+blackagendareport.com                1   0.0     138.000000
+bipartisanreport.com                 1   0.0    1707.000000
+barenakedislam.com                   1   0.0     334.000000
+anonhq.com                           1   0.0    2393.000000
+americanlookout.com                  1   1.0    1609.000000
+washingtonsblog.com                  1   1.0    2319.000000
+ 
+Correlation between article length and fake, for all points:
+               articleLength      fake
+articleLength       1.000000  0.068344
+fake                0.068344  1.000000
+ 
+Average and median lengths grouped by fake/true:
+     articleLength        
+              mean  median
+fake                      
+0.0    3326.676471  2391.5
+1.0    4146.292929  3011.0
  
 Column names:
 Index(['Unnamed: 0', 'id', 'domain', 'type', 'url', 'content', 'scraped_at',
        'inserted_at', 'updated_at', 'title', 'authors', 'keywords',
-       'meta_keywords', 'meta_description', 'tags', 'summary',
-       'articleLength'],
+       'meta_keywords', 'meta_description', 'tags', 'summary', 'articleLength',
+       'fake'],
       dtype='object')
  

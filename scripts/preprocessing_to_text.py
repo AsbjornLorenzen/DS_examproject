@@ -193,6 +193,8 @@ class preprocessor_to_text():
         train_df.columns = column_names
         train_words = train_df['content'].values
         stopwords = open('docs/stopwords.txt').read().split('\n')
+
+        print("starting vectorization...")
         # The important part:
         self.tf = TfidfVectorizer(
             stop_words=stopwords, # our own stopwords list which was recommended from the course slides
@@ -300,8 +302,8 @@ if __name__ == '__main__':
     p = preprocessor_to_text()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
     #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
-    p.bulk_preprocess_sk(100000,'data/corpus_100000_reservoir.csv','apples')
+    p.bulk_preprocess_sk(1000000,'data/corpus_1000000_reservoir.csv','cucumber')
     #p.draw_n_samples(100000)
-    p.reservoir_sample(100000)
+    #p.reservoir_sample(100000)
     #p.load_liar('data/train_liar.tsv')
 

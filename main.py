@@ -65,11 +65,14 @@ class fake_news_predictor():
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
         naive_bayes(self.dataset).naive_bayes_model(self.train_df, self.val_df)
     
-    def run_NN_model(self):
+    def run_NN_model(self,model_name,use_saved_model=False):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
         NNmodel = NN.NN_model(self.dataset)
-        NNmodel.use(self.train_df, self.val_df,self.test_df)
+        if test_set:
+            NNmodel.use(self.train_df, self.val_df,self.test_df,model_name=model_name,use_saved_model=use_saved_model)
+        else:
+            NNmodel.use(self.train_df, self.val_df,self.test_df,model=model_name,use_saved_model=use_saved_model)
 
     def run_SVM_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
@@ -82,6 +85,7 @@ class fake_news_predictor():
 
         if ((not hasattr(self,'train_df')) and train_set):
             self.train_df = pd.read_csv(dir + 'train.csv',index_col=False,usecols=range(1,16))
+            
             self.train_df.columns = self.column_names
             self.train_df['type'] = self.train_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
@@ -110,15 +114,19 @@ class fake_news_predictor():
         gc.collect()
 
 if __name__ == '__main__':
-    predictor = fake_news_predictor('apples') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
-    predictor.load_dataframes(test_set=True) # load small file as training model
 
+    
+    predictor = fake_news_predictor('cucumber') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
+    test_set = True
+    predictor.load_dataframes(test_set=test_set)#apply on test data as well
+    #model already stored, therefore use_saved_model=True
+    predictor.run_NN_model(model_name='standard',use_saved_model=True)
 
     #predictor.run_linear_model()
     #predictor.run_dtree_model()
     #predictor.run_passagg_model()
     #predictor.run_nbayes_model()
-    predictor.run_NN_model()
+    
     #predictor.run_logistic_model()
     #predictor.run_SVM_model()
 
