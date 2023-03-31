@@ -19,7 +19,7 @@ from gensim.models import Word2Vec
 
 nltk.download('punkt')
 
-class preprocessor_to_text():
+class preprocessor():
     def __init__(self):
         pd.options.mode.chained_assignment = None # ignore warnings
         self.ss = SnowballStemmer(language='english')

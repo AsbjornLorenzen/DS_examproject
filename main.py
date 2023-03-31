@@ -1,5 +1,5 @@
 import pandas as pd
-from scripts import preprocessor, preprocessor_to_text
+from scripts import preprocessor
 from models import simple_models#, NN
 from models import naive_bayes
 from models import SVM
@@ -116,7 +116,7 @@ class fake_news_predictor():
 if __name__ == '__main__':
 
     
-    predictor = fake_news_predictor('dataset_name') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
+    predictor = fake_news_predictor('dataset_name') 
     predictor.load_dataframes(test_set='test.csv',liar=False)#apply on test data as well
     #model already stored, therefore use_saved_model=True
     predictor.run_NN_model(model_name='standard',use_saved_model=True)
