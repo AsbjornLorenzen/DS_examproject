@@ -40,11 +40,6 @@ class NN_model():
         for x in [x_train,x_val]:
             print(f'shape of arrays(train,val/test): {x.shape}')
 
-        #vectorize 'content' of both train, validation and test data        
-        #train_feat = self.cv.fit_transform(x_train.values) #fit and transform
-        #val_feat = self.cv.transform(x_val.values) #only transfor
-        #test_feat = self.cv.transform(x_test.values) #only transfor
-
         #convert inputs to tensors(tensors are like arrays but in tensorflow instead of numpy)
         #removed since vectorize layer added
         train_x_tensor = tf.convert_to_tensor(x_train)

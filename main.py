@@ -69,10 +69,7 @@ class fake_news_predictor():
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
         NNmodel = NN.NN_model(self.dataset)
-        if test_set:
-            NNmodel.use(self.train_df, self.val_df,self.test_df,model_name=model_name,use_saved_model=use_saved_model)
-        else:
-            NNmodel.use(self.train_df, self.val_df,self.test_df,model=model_name,use_saved_model=use_saved_model)
+        NNmodel.use(self.train_df, self.val_df,self.test_df,model_name=model_name,use_saved_model=use_saved_model)
 
     def run_SVM_model(self):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
@@ -117,8 +114,7 @@ if __name__ == '__main__':
 
     
     predictor = fake_news_predictor('cucumber') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
-    test_set = True
-    predictor.load_dataframes(test_set=test_set)#apply on test data as well
+    predictor.load_dataframes(test_set=True)#apply on test data as well
     #model already stored, therefore use_saved_model=True
     predictor.run_NN_model(model_name='standard',use_saved_model=True)
 
