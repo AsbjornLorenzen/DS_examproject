@@ -1,14 +1,9 @@
 import pandas as pd
 from scripts import preprocessor
-from models import simple_models#, NN
+from models import simple_models, NN
 from models import naive_bayes
 from models import SVM
 import gc
-
-
-
-#df = pd.read_csv('https://raw.githubusercontent.com/several27/FakeNewsCorpus/master/news_sample.csv')
-#print(df.keys())
 
 class fake_news_predictor():
     def __init__(self,dataset):
@@ -78,7 +73,7 @@ class fake_news_predictor():
 
     def load_dataframes(self,train_set='train.csv',val_set='validation.csv',test_set='',liar=False):
         # Load train, val and test dataframes if they are not already loaded and if their filename is given as arg
-        dir = 'data/' + self.dataset + '/'
+        dir = self.dataset #'data/' + self.dataset + '/'
 
         if ((not hasattr(self,'train_df')) and train_set):
             self.train_df = pd.read_csv(dir + train_set,index_col=False,usecols=range(1,16))
@@ -114,22 +109,25 @@ class fake_news_predictor():
         gc.collect()
 
 if __name__ == '__main__':
+    dataset = 'data/dataset_name/'
+    preprocessor = preprocessor()
+    preprocessor.reservoir_sample(1000,'data/news_cleaned_2018_02_13.csv','data/sample.csv')
+    preprocessor.bulk_preprocess_tfidf(100000,'data/sample.csv',dataset)
+    preprocessor.load_liar('data/train_liar.tsv',dataset)
 
-    
-    predictor = fake_news_predictor('dataset_name') 
+    predictor = fake_news_predictor(dataset) 
     predictor.load_dataframes(test_set='test.csv',liar=False)#apply on test data as well
-    #model already stored, therefore use_saved_model=True
-    predictor.run_NN_model(model_name='standard',use_saved_model=True)
 
-    #predictor.run_linear_model()
-    #predictor.run_dtree_model()
-    #predictor.run_passagg_model()
-    #predictor.run_nbayes_model()
-    #predictor.run_NN_model()
+    predictor.run_linear_model()
+    predictor.run_dtree_model()
+    predictor.run_passagg_model()
+    predictor.run_nbayes_model()
+    predictor.run_logistic_model()
     predictor.run_SVM_model(mode='tfidf')
 
+    # model already stored, therefore use_saved_model=True
+    predictor.run_NN_model(model_name='standard',use_saved_model=True)
 
     # Test on liar:
-    #predictor = fake_news_predictor('word2vec_and_tfidf_100k') 
-    #SVM(predictor.dataset).test_on_liar(model_name='/tfidf_liar_matrix.pickle')
+    SVM(predictor.dataset).test_on_liar(model_name='/tfidf_liar_matrix.pickle')
 

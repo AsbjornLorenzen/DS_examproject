@@ -169,9 +169,8 @@ class preprocessor():
 
     # Starts out by splitting into train, test, val, and then applies preprocessing using only sklearn.
     # Input file must be a .csv file that has not been split into train/test/val
-    def bulk_preprocess_tfidf(self,nrows,input_file,output_name):
+    def bulk_preprocess_tfidf(self,nrows,input_file,output_dir):
         print('Preprocessing data...')
-        output_dir = self.output_dir(output_name)
         starttime = timer()
         loaded_chunks = 0
         chunksize = 5000
@@ -234,11 +233,11 @@ class preprocessor():
         with open(output_dir + 'tfidf_test_matrix.pickle', 'wb') as handle:
             pickle.dump(tfidf_test_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def reservoir_sample(self,n):
+    def reservoir_sample(self,n,input,output_name):
         print(f"Drawing approximately {n} samples using reservoir sampling...")
         totn = 9408908 #number of records in corpus (according to the readme)
-        input_filename = 'data/news_cleaned_2018_02_13.csv'
-        output_filename = 'data/corpus_' + str(n) + 'test.csv'
+        input_filename = input
+        output_filename = output_name
         try:
             os.remove(output_filename)
         except:
@@ -507,7 +506,7 @@ class preprocessor():
         
 
 if __name__ == '__main__':
-    p = preprocessor_to_text()
+    p = preprocessor()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
     #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
     #p.bulk_preprocess_tfidf(8000,'data/corpus_10000.csv','kiwikiwi')

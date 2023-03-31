@@ -29,7 +29,7 @@ class naive_bayes():
     # Makes tfidf of desired field, and returns the features.
     # These features should be used to train the model.
     def get_feature_set(self, x_train, x_val):
-        dir = 'data/' + self.dataset + '/'
+        dir = self.dataset
         try:
             with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
                 self.tfidf = pickle.load(handle)

@@ -34,7 +34,7 @@ class SVM():
 
         self.fit(train_feature_set,y_train)
         # Save model: 
-        with open('data/' + self.dataset + '/trained_svm_model_tfidf_w2v_100k.pickle', 'wb') as handle:
+        with open(self.dataset +  'trained_svm_model_tfidf_w2v_100k.pickle', 'wb') as handle:
             pickle.dump(self.model, handle, protocol=pickle.HIGHEST_PROTOCOL)
         self.pred(val_feature_set,y_val)
     
@@ -82,7 +82,7 @@ class SVM():
     # These features should be used to train the model.
     # val_set_feat is a pre-generated feature set for validation
     def get_feature_set(self, x_train, x_val,mode='tfidf',val_set_feat=''):
-        dir = 'data/' + self.dataset + '/'
+        dir = self.dataset 
         if mode == 'tfidf':
             with open(dir + 'tfidf_train_matrix.pickle', 'rb') as handle:
                 train_feat = pickle.load(handle)

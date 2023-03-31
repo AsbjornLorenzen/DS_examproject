@@ -40,7 +40,7 @@ class simple_models():
         x_val, y_val = self.split_x_y(val_df)
         # Decide which sets to load: 
         # When using LIAR or another dataset, modify this line
-        train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val,mode='tfidf',test_set_feat='tfidf_test_matrix.pickle')
+        train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val,mode='tfidf')
         self.fit(train_feature_set,y_train)
         self.pred(val_feature_set,y_val)
 
@@ -62,7 +62,7 @@ class simple_models():
         elif mode == 'tfidf':
             # Does not use field arg, since the preprocessed tfidf only works with content (text)
             # We apply tfidf in preprocessing, so load preprocessed train matrix:
-            dir = 'data/' + self.dataset + '/'
+            dir = self.dataset
             try:
                 with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
                     self.tfidf = pickle.load(handle)
@@ -80,7 +80,7 @@ class simple_models():
 
         # Word2vec and tfidf are always applied in preprocessing
         elif mode == 'word2vec_tfidf':
-            dir = 'data/' + self.dataset + '/'
+            dir = self.dataset
             try:
                 with open(dir + 'word2vec_tfidf_train.pickle', 'rb') as handle:
                     self.train_feat = pickle.load(handle)

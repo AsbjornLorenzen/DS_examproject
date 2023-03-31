@@ -1,5 +1,6 @@
 # Data Science final project
-This project 
+To run the project, excecute main.py.
+Below, you will find a documentation of the code, and details on dependencies are found at the bottom.
 
 # Preprocessing
 
