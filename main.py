@@ -71,32 +71,36 @@ class fake_news_predictor():
         NNmodel = NN.NN_model(self.dataset)
         NNmodel.use(self.train_df, self.val_df,self.test_df)
 
-    def run_SVM_model(self):
+    def run_SVM_model(self,mode='tfidf'):
         if ((not hasattr(self,'train_df')) and (not hasattr(self,'val_df'))): # Should test set also be required??
             print('Error: Dataframe was not loaded. Remember to use load_dataframes() to load at least the train and validation set')
-        SVM(self.dataset).SV_model(self.train_df, self.val_df)
+        SVM(self.dataset).SV_model(self.train_df, self.val_df,mode)
 
-    def load_dataframes(self,train_set=True,val_set=True,test_set=False,liar=False):
+    def load_dataframes(self,train_set='train.csv',val_set='validation.csv',test_set='',liar=False):
         # Load train, val and test dataframes if they are not already loaded and if their filename is given as arg
         dir = 'data/' + self.dataset + '/'
 
         if ((not hasattr(self,'train_df')) and train_set):
-            self.train_df = pd.read_csv(dir + 'train.csv',index_col=False)#,usecols=range(1,16))
+            self.train_df = pd.read_csv(dir + train_set,index_col=False,usecols=range(1,16))
             self.train_df.columns = self.column_names
             self.train_df['type'] = self.train_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
+        # If liar is true, we load liar set as val set
+        if (liar):
+            self.val_df = pd.read_csv(dir + 'liar.csv')
+            self.val_df['type'] = self.val_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
+            return 
+        
         if ((not hasattr(self,'val_df')) and val_set):
-            self.val_df = pd.read_csv(dir + 'validation.csv',index_col=False)#,usecols=range(1,16))
+            self.val_df = pd.read_csv(dir + val_set,index_col=False,usecols=range(1,16))
             self.val_df.columns = self.column_names
             self.val_df['type'] = self.val_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
 
         if ((not hasattr(self,'test_df')) and test_set):
-            self.test_df = pd.read_csv(dir + 'test.csv',index_col=False)#,usecols=range(1,16))
+            self.test_df = pd.read_csv(dir + test_set,index_col=False,usecols=range(1,16))
             self.test_df.columns = self.column_names
             self.test_df['type'] = self.test_df['type'].map(self.type_map).fillna(1) # Sort unknown as 1 (fake)
         
-        if (liar):
-            self.liar = pd.read_csv('data/liar.csv')
 
     # Remove dataframes from memory. Useful if we want to explicitly load a new dataset
     def remove_dataframes(self):
@@ -110,15 +114,18 @@ class fake_news_predictor():
         gc.collect()
 
 if __name__ == '__main__':
-    predictor = fake_news_predictor('word2vectest6_no_tfidf_tuned_cbow') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
-    predictor.load_dataframes(test_set=False) # load small file as training model
-
-
+    predictor = fake_news_predictor('tfidf_preprocessed_small2') # 'grapes' arg is the name of the dataset (the directory) which is loaded and trained/predicted on
+    predictor.load_dataframes(liar=False) # load small file as training model
+    #predictor.run_logistic_model()
     #predictor.run_linear_model()
     #predictor.run_dtree_model()
     #predictor.run_passagg_model()
     #predictor.run_nbayes_model()
     #predictor.run_NN_model()
-    #predictor.run_logistic_model()
-    predictor.run_SVM_model()
+    predictor.run_SVM_model(mode='tfidf')
+
+
+    # Test on liar:
+    #predictor = fake_news_predictor('word2vec_and_tfidf_100k') 
+    #SVM(predictor.dataset).test_on_liar(model_name='/tfidf_liar_matrix.pickle')
 

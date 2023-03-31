@@ -1,34 +1,46 @@
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import SVC
-from sklearn.metrics import mean_squared_error, r2_score, accuracy_score
+from sklearn.kernel_approximation import Nystroem
+from sklearn.pipeline import make_pipeline
 import pickle 
-import numpy as np
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from scipy.stats import loguniform
 from cleantext.sklearn import CleanTransformer
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import sklearn
 
 class SVM():
     def __init__(self, dataset):
         self.dataset = dataset # Needed when we need to load more than just the train/test/val csv files
-        self.model = SVC(kernel='rbf',verbose=True)
+        self.model = SVC(kernel='rbf',verbose=True,cache_size=1000,max_iter=100000)
 
-    def SV_model(self, train_df, val_df):
+    def load_data(self,train_df,val_df,mode):
         x_train, y_train = self.split_x_y(train_df)
         x_val, y_val = self.split_x_y(val_df)
-        #train_feature_set, val_feature_set = self.get_feature_set_word2vec(x_train,x_val)
-        #train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val)
-        with open('data/' + self.dataset + '/word2vec_train.pickle', 'rb') as handle:
-            train_feature_set = pickle.load(handle)
-        with open('data/' + self.dataset + '/word2vec_val.pickle', 'rb') as handle:
-            val_feature_set = pickle.load(handle)
-        #self.hyp_tuning(train_feature_set, y_train)
-        #self.randomized_search_tuning(train_feature_set,y_train)
+
+        # Get feature sets by loading pickles. The mode determines what pickle names are loaded.
+        # Can load either tfidf, word2vec, or tfidf+word2vec pickles. Note that these are pre-generated in the preprocessor
+        train_feature_set, val_feature_set = self.get_feature_set(x_train,x_val,mode=mode)
+        return x_train, y_train, x_val, y_val, train_feature_set, val_feature_set
+
+    def SV_model(self, train_df, val_df,mode='tfidf',kernel_approximation=False):
+        x_train, y_train, x_val, y_val, train_feature_set, val_feature_set = self.load_data(train_df,val_df,mode)
+
+        # Using kernel approximation:
+        if kernel_approximation:
+            n_components = 100
+            approx_kernel = Nystroem(kernel='rbf',n_components=n_components, random_state=42)
+            self.model = make_pipeline(approx_kernel,self.model,verbose=True)
+
         self.fit(train_feature_set,y_train)
+        # Save model: 
+        with open('data/' + self.dataset + '/trained_svm_model_tfidf_w2v_100k.pickle', 'wb') as handle:
+            pickle.dump(self.model, handle, protocol=pickle.HIGHEST_PROTOCOL)
         self.pred(val_feature_set,y_val)
     
-    def hyp_tuning(self, train_feature_set, y_train): # Optimization of hyperparameters
+    def hyp_tuning(self,train_df,val_df,mode='tfidf'): # Optimization of hyperparameters
         print("Beginning hyperparameter optimization...")
+        _, y_train, _, _, train_feature_set, _ = self.load_data(train_df,val_df,mode)
         hyperparameters = {
             'C': [0.1, 1, 10, 100],
             #'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
@@ -36,14 +48,18 @@ class SVM():
             'gamma': ['scale', 'auto'] + [0.1, 1, 10],
             'coef0': [-1, 0, 1]
         }
+
         # perform a grid search over the parameter grid
         grid_search = GridSearchCV(self.model, hyperparameters, cv=5, n_jobs=-1, verbose=1, scoring='accuracy')
         grid_search.fit(train_feature_set, y_train)
+
         # print the best hyperparameters
         print("Best hyperparameters: ", grid_search.best_params_)
         print("Training accuracy with best hyperparameters: ", grid_search.best_score_)
 
-    def randomized_search_tuning(self, train_feature_set, y_train):
+
+    def randomized_search_tuning(self,train_df,val_df,mode='tfidf'): # Optimization of hyperparameters
+        _, y_train, _, _, train_feature_set, _ = self.load_data(train_df,val_df,mode)
         print("Beginning randomized search optimization...")
         params = {'C': loguniform(1e-6, 1e+6),
           'gamma': loguniform(1e-6, 1e+1),
@@ -52,96 +68,50 @@ class SVM():
         search.fit(train_feature_set, y_train)
         print('Best hyperparameters:', search.best_params_)
         print('Best accuracy score:', search.best_score_)
+
+    def test_on_liar(self,model_name):
+        with open('data/' + self.dataset + model_name, 'rb') as handle:
+            self.model = pickle.load(handle)
+        with open('data/' + self.dataset + '/tfidf_liar_matrix.pickle', 'rb') as handle:
+            self.liar_feat = pickle.load(handle)
+        liar_df = pd.read_csv('data/' + self.dataset + '/liar.csv',index_col=False)#,usecols=range(1,16))
+        x_liar, y_liar = self.split_x_y(liar_df)
+        self.pred(self.liar_feat,y_liar)
     
     # Makes tfidf of desired field, and returns the features.
     # These features should be used to train the model.
-    def get_feature_set(self, x_train, x_val):
+    # val_set_feat is a pre-generated feature set for validation
+    def get_feature_set(self, x_train, x_val,mode='tfidf',val_set_feat=''):
         dir = 'data/' + self.dataset + '/'
-        try:
-            with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
-                self.tfidf = pickle.load(handle)
+        if mode == 'tfidf':
             with open(dir + 'tfidf_train_matrix.pickle', 'rb') as handle:
-                self.tfidf_train_matrix = pickle.load(handle)
-        except Exception as e:
-            print('Remember to create the tfidf pickle files before running with the tfidf model!\n',e)
-        train_feat = self.tfidf_train_matrix
-        val_feat = self.tfidf.transform(x_val['content'].values)
+                train_feat = pickle.load(handle)
+
+            # If we already have a transformed test set matrix:
+            if val_set_feat:
+                with open(dir + val_set_feat, 'rb') as handle:
+                    val_feat = pickle.load(handle)
+            
+            # Otherwise, generate val feat set
+            else:
+                with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
+                    tfidf = pickle.load(handle)
+                val_feat = tfidf.transform(x_val['content'].values)
+        
+        elif mode == 'word2vec':
+            with open('data/' + self.dataset + '/word2vec_train.pickle', 'rb') as handle:
+                train_feat = pickle.load(handle)
+            with open('data/' + self.dataset + '/word2vec_val.pickle', 'rb') as handle:
+                val_feat = pickle.load(handle)
+
+        elif mode == 'word2vec_tfidf':
+            with open('data/' + self.dataset + '/word2vec_tfidf_train.pickle', 'rb') as handle:
+                train_feat = pickle.load(handle)
+            with open('data/' + self.dataset + '/word2vec_tfidf_val.pickle', 'rb') as handle:
+                val_feat = pickle.load(handle)
+    
         return train_feat, val_feat
     
-    """     # Makes tfidf of desired field, and returns the features.
-    # These features should be used to train the model.
-    def get_feature_set_word2vec(self, x_train, x_val):
-        cleaner = CleanTransformer(
-            # Modified from clean-texts site:
-            lower=True,                    # lowercase text
-            no_line_breaks=True,           # fully strip line breaks as opposed to only normalizing them
-            no_urls=True,                  # replace all URLs with a special token
-            no_emails=True,                # replace all email addresses with a special token
-            no_numbers=True,               # replace all numbers with a special token
-            no_currency_symbols=False,
-            replace_with_url="URLtoken",
-            replace_with_email="EMAILtoken",
-            replace_with_number="",
-            replace_with_currency_symbol="CURtoken",
-            no_punct=True,
-            lang="en")
-        dir = 'data/' + self.dataset + '/'
-        try:
-            with open(dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
-                self.tfidf = pickle.load(handle)
-            with open(dir + 'word2vec_model.pickle', 'rb') as handle:
-                self.word2vec_model = pickle.load(handle)
-            with open(dir + 'word2vec_combined.pickle', 'rb') as handle:
-                self.word2vec_matrix = pickle.load(handle)
-        except Exception as e:
-            print('Remember to create the tfidf pickle files before running with the tfidf model!\n',e)
-        train_feat = self.word2vec_matrix
-        tokenizer = lambda docs: [self.tfidf.build_tokenizer()(doc) for doc in docs]
-        #Create feat set for val:
-        #texts_val = x_val['content'].values
-        texts_val = cleaner.transform(x_val['content'])
-        print('TEXTS VAL ',texts_val[0:2])
-        tokens_val = tokenizer(texts_val)
-
-        print('TOKEN VAL ',tokens_val[0:2])
-        sentences_val = tokens_val #[text.split() for text in texts_val]
-        sentences_val_2 = []
-        print('SENT VAL ',sentences_val[0:2])
-        test = sentences_val[0]
-        for sent in sentences_val:
-            append = [word for word in sent if word in self.word2vec_model.wv]
-            sentences_val_2.append(append)
-        sentences_val = sentences_val_2
-        print('SENT VAL TEST',sentences_val[0],test)
-        #print('SENTENCES: ',sentences_val[0:10])
-        print(self.word2vec_model.wv.most_similar('washington'))
-
-        print(len(texts_val),len(sentences_val))
-
-        print('SEnt before  ',sentences_val[0:2])
-        sentences_as_text = []
-        for sent in sentences_val:
-            sentences_as_text.append(" ".join(sent))
-        print('SEnt after  ',sentences_as_text[0:2])
-
-        tfidf_vectors = self.tfidf.transform(sentences_as_text) # should maybe be texts_val
-        #combined_vectors_val = np.zeros((len(texts_val), tfidf_vectors.shape[1] + self.word2vec_model.vector_size))
-        combined_vectors_val = np.zeros((len(texts_val), self.word2vec_model.vector_size))
-
-
-        #print(len(tfidf_vectors),len(sentences_val))
-        for i in range(len(texts_val)):
-            #print('SENT i: ',sentences_val[i])
-            #allowed_words = [word for word in sentences_val[i] if word in self.word2vec_model.wv]
-            #for word in sentences_val[i]:
-                #allowed_words =
-            #tfidf_vector = tfidf_vectors[i].toarray().ravel()
-            #word2vec_vector = self.word2vec_model.wv[sentences_val[i]].mean(axis=0)
-            print('sent val ',sentences_val[i])
-            combined_vectors_val[i] = self.word2vec_model.wv[sentences_val[i]].mean(axis=0) #np.concatenate((tfidf_vector, word2vec_vector))
-        val_feat = combined_vectors_val
-
-        return train_feat, val_feat """
     
     # Return a Y column with 1 for fake news and 0 for true
     def split_x_y(self,df):
@@ -154,8 +124,20 @@ class SVM():
     
     def pred(self,x_val,y_val_observed):
         y_pred = self.model.predict(x_val)
-        acc = accuracy_score(y_val_observed,y_pred)
-        print('SVM accuracy: ', acc)
+
+        precision = round(precision_score(y_val_observed, y_pred), 3)
+        recall = round(recall_score(y_val_observed, y_pred), 3)
+        f1 = round(f1_score(y_val_observed, y_pred), 3)
+        accuracy = round(accuracy_score(y_val_observed, y_pred), 3)
+        confusion_matrix = sklearn.metrics.confusion_matrix(y_val_observed,y_pred)
+
+        print('\n\n ------------------ \n\n')
+        print("Accuracy: ", accuracy)
+        print("Precision: ", precision)
+        print("Recall: ", recall)
+        print("F1 score: ", f1)
+        print('Confusion Matrix: \n',confusion_matrix)
+        print('\n\n ------------------ \n\n')
 
 
 

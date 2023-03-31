@@ -16,18 +16,15 @@ import os
 import glob
 import numpy as np
 from gensim.models import Word2Vec
-from ast import literal_eval
-import string
 
-#nltk.download('punkt')
+nltk.download('punkt')
 
 class preprocessor_to_text():
     def __init__(self):
         pd.options.mode.chained_assignment = None # ignore warnings
         self.ss = SnowballStemmer(language='english')
         self.lemmatizer = WordNetLemmatizer()
-        csv.field_size_limit(sys.maxsize) # necessary when loading large articles 
-        # Define the cleaning object
+        csv.field_size_limit(sys.maxsize) # Necessary when loading large articles 
         self.cleaner = CleanTransformer(
             # Modified from clean-texts site:
             lower=True,                    # lowercase text
@@ -72,8 +69,6 @@ class preprocessor_to_text():
             print(f"Vocabulary after stemming: ",self.get_vocab_size(df))
             print(f"Stemmed in {round(time3-time2,3)} seconds")
 
-        #Note: Here, we don't convert to counter, and we don't remove tail.
-
         return df
 
     def to_counter(self,df):
@@ -88,7 +83,6 @@ class preprocessor_to_text():
 
     # Custom tokenization, including stemming, to be used by sklearn
     def tokenize(self,text):
-        #text = text.translate(None, string.punctuation)
         tokenized = nltk.word_tokenize(text)
         stemmed = self.stem(tokenized)
         return stemmed
@@ -106,14 +100,14 @@ class preprocessor_to_text():
         stemmed_words = [self.ss.stem(word) for word in tokens]
         return stemmed_words
 
-    def remove_tail(self, counters): #removes words that occur very infrequently
-        threshold = counters.shape[0]/100 #words that on average appear in less than 1/100 of the articles
+    # Removes words that occur very infrequently
+    def remove_tail(self, counters): 
+        threshold = counters.shape[0]/100 # Words that on average appear in less than 1/100 of the articles
         combined_counts = sum(counters, Counter())
         words_to_delete = [k for k, v in combined_counts.items() if v <= threshold]
         for counter in counters:
             for word in words_to_delete:
                 del counter[word]
-        print(len(words_to_delete))
         return counters        
 
     def save_df(self,df):
@@ -145,7 +139,8 @@ class preprocessor_to_text():
 
         return train, validation, test     
 
-    def bulk_preprocess(self,nrows,input_file,output_file):
+    # Read data in chunks, apply preprocessing pipeline, and then split in train/test/val.
+    def bulk_preprocess(self,nrows,input_file,output_dir):
         print('Preprocessing data...')
         starttime = timer()
 
@@ -161,13 +156,11 @@ class preprocessor_to_text():
             ]
             chunk.columns = column_names
             processed_chunk = p.clean_data(chunk,verbosity=1)
-            #train, validation, test = self.split_data(processed_chunk)
             train, validation, test = self.split_data(processed_chunk)
 
-
-            train.to_csv(output_file+'train.csv', mode='a', index=False, header=False)
-            validation.to_csv(output_file+'validation.csv', mode='a', index=False, header=False)
-            test.to_csv(output_file+'test.csv', mode='a', index=False, header=False)
+            train.to_csv(output_dir+'train.csv', mode='a', index=False, header=False)
+            validation.to_csv(output_dir+'validation.csv', mode='a', index=False, header=False)
+            test.to_csv(output_dir+'test.csv', mode='a', index=False, header=False)
 
             loaded_chunks += chunksize
             endtime = timer()
@@ -175,10 +168,11 @@ class preprocessor_to_text():
     
 
     # Starts out by splitting into train, test, val, and then applies preprocessing using only sklearn.
-    def bulk_preprocess_sk(self,nrows,input_file,output_name):
+    # Input file must be a .csv file that has not been split into train/test/val
+    def bulk_preprocess_tfidf(self,nrows,input_file,output_name):
         print('Preprocessing data...')
-        starttime = timer()
         output_dir = self.output_dir(output_name)
+        starttime = timer()
         loaded_chunks = 0
         chunksize = 5000
 
@@ -194,15 +188,18 @@ class preprocessor_to_text():
             print(f"Done loading {loaded_chunks} rows in {round(endtime-starttime,3)} seconds")
         
         # Load train df and fit tfidf:
-        # NOTE: If this file is too big, we can read it as a stream and apply tfidf to that, as in https://stackoverflow.com/questions/53754234/creating-a-tfidfvectorizer-over-a-text-column-of-huge-pandas-dataframe 
         train_df = pd.read_csv(output_dir+'train.csv',index_col=False,engine='python',usecols=range(1,16))
+        val_df = pd.read_csv(output_dir+'validation.csv',index_col=False,engine='python',usecols=range(1,16))
+        test_df = pd.read_csv(output_dir+'test.csv',index_col=False,engine='python',usecols=range(1,16))
         column_names = [
             'id', 'domain', 'type', 'url', 'content',
             'scraped_at', 'inserted_at', 'updated_at', 'title', 'authors',
             'keywords', 'meta_keywords', 'meta_description', 'tags', 'summary'
         ]
+
         train_df.columns = column_names
         train_words = train_df['content'].values
+
         stopwords = open('docs/stopwords.txt').read().split('\n')
         # The important part:
         self.tf = TfidfVectorizer(
@@ -214,18 +211,32 @@ class preprocessor_to_text():
             max_features=2000) # 2000 words
         tfidf_train_matrix = self.tf.fit_transform(train_words)
 
-        with open(output_dir + 'tfidf_train_matrix.pickle', 'wb') as handle:
-            pickle.dump(tfidf_train_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
-    
         with open(output_dir + 'tfidf_vectorizer.pickle', 'wb') as handle:
             pickle.dump(self.tf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+        with open(output_dir + 'tfidf_train_matrix.pickle', 'wb') as handle:
+            pickle.dump(tfidf_train_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(output_dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
+            self.tf = pickle.load(handle)
+
+        # Repeat on val and test df's:
+        val_df.columns = column_names
+        test_df.columns = column_names
+        val_words = val_df['content'].values
+        test_words = test_df['content'].values
+        tfidf_val_matrix = self.tf.transform(val_words)
+        tfidf_test_matrix = self.tf.transform(test_words)
+
+        with open(output_dir + 'tfidf_val_matrix.pickle', 'wb') as handle:
+            pickle.dump(tfidf_val_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(output_dir + 'tfidf_test_matrix.pickle', 'wb') as handle:
+            pickle.dump(tfidf_test_matrix, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
     def reservoir_sample(self,n):
         print(f"Drawing approximately {n} samples using reservoir sampling...")
-        #totn = 9408908 #number of records in corpus (according to the readme)
-        totn = 80000
-        input_filename = 'data/corpus_100000_reservoir.csv'
-        output_filename = 'data/corpus_' + str(n) + '_astrid.csv'
+        totn = 9408908 #number of records in corpus (according to the readme)
+        input_filename = 'data/news_cleaned_2018_02_13.csv'
+        output_filename = 'data/corpus_' + str(n) + 'test.csv'
         try:
             os.remove(output_filename)
         except:
@@ -266,12 +277,9 @@ class preprocessor_to_text():
         time2 = timer()
         print(f"Loaded {n} articles in {time2-starttime} seconds")
 
-    def word2vec_preprocessing_improved(self,input_dir,output_dir):
+    def word2vec_preprocessing(self,input_dir,output_dir):
         train_df = pd.read_csv(input_dir+'train.csv',index_col=False,engine='python')#,usecols=range(1,16))
         val_df = pd.read_csv(input_dir+'validation.csv',index_col=False,engine='python')#,usecols=range(1,16))
-        
-        train_dim_before = train_df.shape[0]
-        val_dim_before = val_df.shape[0]
         
         column_names = [
             'id', 'domain', 'type', 'url', 'content',
@@ -286,54 +294,53 @@ class preprocessor_to_text():
         
         print('Training word2vec model...')
         text = train_df['content'].values
-        word2vec_model = Word2Vec(text, vector_size=300, window=5, min_count=5, workers=4, sg=0) # USE CBOG - sg=0
-
         text_val = val_df['content'].values
+        word2vec_model = Word2Vec(text, vector_size=300, window=5, min_count=5, workers=4, sg=0) # sg=0 means CBOW, sg=1 is skipgram
+        word2vec_model.save('model_' + output_dir + '.model')
+
+        print('Removing words lacking in vocabulary')
+        text = [[word for word in t if word in word2vec_model.wv] for t in text]
+        text_val = [[word for word in t if word in word2vec_model.wv] for t in text_val]
 
         print('Creating vectors...')
-        X_train = []
-        for document in text:
-            document_vector = []
-            for word in document:
-                try:
-                    word_vector = word2vec_model.wv[word]
-                    document_vector.append(word_vector)
-                except KeyError:
-                    pass
-            document_vector = np.mean(document_vector, axis=0)
-            X_train.append(document_vector)
-
-        X_val = []
-        for document in text_val:
-            document_vector = []
-            for word in document:
-                try:
-                    word_vector = word2vec_model.wv[word]
-                    document_vector.append(word_vector)
-                except KeyError:
-                    pass
-            document_vector = np.mean(document_vector, axis=0)
-            X_val.append(document_vector)
-
-        print(word2vec_model.wv.most_similar("undergradu"))
-
-        print(f"Before: {train_dim_before} After: {len(X_train)} \n Val before:{val_dim_before} after: {len(X_val)}")
+        # Get the average of all word2vec vectors in each document
+        # Code is a bit wonky, but it ensures that we avoid errors when words are not in word2vec vocabulary.
+        X_train = np.zeros((len(text),word2vec_model.vector_size))
+        for c in range(len(text)):
+            if c % 10000 == 0:
+                print('Creating vectors at ',c)
+            try:
+                X_train[c] = word2vec_model.wv[text[c]].mean(axis=0)
+            except:
+                X_train[c] = np.zeros(300)
+                err += 1
+            c += 1
 
         with open(output_dir + 'word2vec_train.pickle', 'wb') as handle:
             pickle.dump(X_train, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+        # Repeat for val set
+        X_val = np.zeros((len(text_val),word2vec_model.vector_size))
+        for c in range(len(text_val)):
+            if c % 10000 == 0:
+                print('Creating vectors at ',c)
+            try: 
+                X_val[c] = word2vec_model.wv[text_val[c]].mean(axis=0)
+            except:
+                X_train[c] = np.zeros(300)
+                err += 1
+            c += 1
+        print('Made ',err,'errors')
         with open(output_dir + 'word2vec_val.pickle', 'wb') as handle:
             pickle.dump(X_val, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-    def word2vec_tfidf_preprocessing_improved(self,input_dir,output_dir):
+    def word2vec_tfidf_preprocessing(self,input_dir,output_dir):
         print('Preprocessing with word2vec and tfidf...')
-        train_df = pd.read_csv(input_dir+'train.csv',index_col=False,engine='python')#usecols=range(1,16))
-        val_df = pd.read_csv(input_dir+'validation.csv',index_col=False,engine='python')#,usecols=range(1,16))
+        train_df = pd.read_csv(input_dir+'train.csv',index_col=False,engine='python',usecols=range(1,16))
+        val_df = pd.read_csv(input_dir+'validation.csv',index_col=False,engine='python',usecols=range(1,16))
         
         train_dim_before = train_df.shape
-        val_dim_before = val_df.shape[0]
-
-        print('Train dim: ',train_dim_before)
+        val_dim_before = val_df.shape
         
         column_names = [
             'id', 'domain', 'type', 'url', 'content',
@@ -342,18 +349,14 @@ class preprocessor_to_text():
         ]
         train_df.columns = column_names
         val_df.columns = column_names
-        print(train_df.columns)
         train_df['content'] = self.cleaner.transform(train_df['content'])
         val_df['content'] = self.cleaner.transform(val_df['content'])
 
         text = train_df['content'].values
         text_val = val_df['content'].values
 
-        print('Test: ',text[0:10])
-
         stopwords = open('docs/stopwords.txt').read().split('\n')
-        tokenized_stopwords = self.tokenize(stopwords)
-        print('Tokenized stopwords: ',tokenized_stopwords)
+        tokenized_stopwords = self.tokenize(" ".join(stopwords))
         stopwords += tokenized_stopwords
 
         tfidf_vectorizer = TfidfVectorizer(
@@ -366,45 +369,71 @@ class preprocessor_to_text():
 
         print('Fitting and transforming tfidf...')
         tfidf_vectors_train = tfidf_vectorizer.fit_transform(text)
+
+        print('Saving tfidf model...')
+        with open(output_dir + 'tfidf_vectorizer.pickle', 'wb') as handle:
+            pickle.dump(tfidf_vectorizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
         print('Transforming tfidf for val...')
         tfidf_vectors_val = tfidf_vectorizer.transform(text_val)
-        print('tokenizing...')
+
+        print('Tokenizing...')
         tokenizer = lambda docs: [tfidf_vectorizer.build_tokenizer()(doc) for doc in docs]
         sentences_train = tokenizer(text)
-        sentences_val = tokenizer(text_val)
-        print('fitting word2vec model...')
-        #NOTE: We concat the train and val sentences in the word2vec, which is allowed since it is using unsupervised learning
-        #word2vec_model = Word2Vec(sentences_train+sentences_val, vector_size=100, window=5, min_count=1, workers=4) 
-        # Tuned below:
-        word2vec_model = Word2Vec(text, vector_size=300, window=5, min_count=5, workers=4, sg=0) # USE CBOG - sg=0
+
+        print('Fitting word2vec model...')
+        # Tuned word2vec model with cbow
+        word2vec_model = Word2Vec(sentences_train, vector_size=300, window=5, min_count=5, workers=4, sg=0) # USE CBOG - sg=0
+        word2vec_model.save('some_model.model')
+
+        tokens_val = tokenizer(text_val)
+        sentences_val = [[word for word in t if word in word2vec_model.wv] for t in tokens_val]
+        sentences_train = [[word for word in t if word in word2vec_model.wv] for t in sentences_train]
+
+
+        with open(output_dir + 'tokenized_sentences_train.pickle', 'wb') as handle:
+            pickle.dump(sentences_val, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        with open(output_dir + 'tokenized_sentences_val.pickle', 'wb') as handle:
+            pickle.dump(sentences_train, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 
         combined_vectors_train = np.zeros((len(text), tfidf_vectors_train.shape[1] + word2vec_model.vector_size))
         combined_vectors_val = np.zeros((len(text_val), tfidf_vectors_train.shape[1] + word2vec_model.vector_size))
 
-        print('combining vectors...')
+        print('Combining vectors...')
         for i in range(len(text)):
-            tfidf_vector = tfidf_vectors_train[i].toarray().ravel()
-            word2vec_vector = word2vec_model.wv[sentences_train[i]].mean(axis=0)
-            combined_vectors_train[i] = np.concatenate((tfidf_vector, word2vec_vector))
+            if i % 10000 == 0:
+                print('Combining at ',i)
+            try:
+                tfidf_vector = tfidf_vectors_train[i].toarray().ravel()
+                word2vec_vector = word2vec_model.wv[sentences_train[i]].mean(axis=0)
+                combined_vectors_train[i] = np.concatenate((tfidf_vector, word2vec_vector))
+            except:
+                print('ERROR with ',i)
+                pass
 
         for i in range(len(text_val)):
-            tfidf_vector = tfidf_vectors_val[i].toarray().ravel()
-            word2vec_vector = word2vec_model.wv[sentences_val[i]].mean(axis=0)
-            combined_vectors_val[i] = np.concatenate((tfidf_vector, word2vec_vector))
-
-        print('combined vectors val: ',combined_vectors_val[0:3])
-        print('combined vectors train: ',combined_vectors_train[0:3])
+            if i % 10000 == 0:
+                print('Combining val at ',i)
+            try:
+                tfidf_vector = tfidf_vectors_val[i].toarray().ravel()
+                word2vec_vector = word2vec_model.wv[sentences_val[i]].mean(axis=0)
+                combined_vectors_val[i] = np.concatenate((tfidf_vector, word2vec_vector))
+            except:
+                print('ERROR with ',i)
+                pass
 
         print(f"Before: {train_dim_before} After: {len(combined_vectors_train)} \n Val before:{val_dim_before} after: {len(combined_vectors_val)}")
 
-        with open(output_dir + 'word2vec_feat_train.pickle', 'wb') as handle:
+        with open(output_dir + 'word2vec_tfidf_train.pickle', 'wb') as handle:
             pickle.dump(combined_vectors_train, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-        with open(output_dir + 'word2vec_feat_val.pickle', 'wb') as handle:
+        with open(output_dir + 'word2vec_tfidf_val.pickle', 'wb') as handle:
             pickle.dump(combined_vectors_val, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
     # Converts LIAR to a dataset with 'content' and 'type' columns, so it can be loaded by the same models 
-    def load_liar(self,filename):
+    def load_liar(self,filename,output_dir,preprocess=False):
         type_map = {
             'pants-fire':1, 
             'false':1, 
@@ -419,10 +448,59 @@ class preprocessor_to_text():
         text = df.iloc[:,2]
         output_df['type'] = types
         output_df['content'] = text
-        output_df.to_csv('data/liar.csv')
+        output_df.to_csv(output_dir + 'liar.csv')
+        if (preprocess):
+            # Preprocesses and saves pickle
+            self.preprocess_liar(output_dir,output_df,use_word2vec=True)
 
+    def preprocess_liar(self,output_dir,liar_df,use_word2vec=False):
+        # Must be called in a directory where we have already fitted the model, so it contains the tfidf vectorizer and the fitted word2vec model
+        train_df = liar_df
+        train_df['content'] = self.cleaner.transform(train_df['content'])
 
+        text = train_df['content'].values
+        with open(output_dir + 'tfidf_vectorizer.pickle', 'rb') as handle:
+            tfidf_vectorizer = pickle.load(handle)
 
+        print('Transforming tfidf liar...')
+        tfidf_vectors = tfidf_vectorizer.transform(text)
+        with open(output_dir + 'tfidf_liar_matrix.pickle', 'wb') as handle:
+            pickle.dump(tfidf_vectors, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+        # Skip the rest if we don't require word2vec (saves time)
+        if not use_word2vec:
+            return
+
+        print('Tokenizing...')
+        tokenizer = lambda docs: [tfidf_vectorizer.build_tokenizer()(doc) for doc in docs]
+        sentences_train = tokenizer(text)
+        print('Fitting word2vec model...')
+        # Tuned below:
+        word2vec_model = Word2Vec.load('model_100k.model')
+
+        sent_train = sentences_train #backup 
+        sentences_train = [[word for word in t if word in word2vec_model.wv] for t in sent_train]
+        combined_vectors_train = np.zeros((len(text), tfidf_vectors.shape[1] + word2vec_model.vector_size))
+
+        print('Combining vectors...')
+        doc_vectors = [[0 for e in range(300)] for f in range (len(text))]
+        for i in range(len(text)):
+            if i % 10000 == 0:
+                print('Combining at ',i)
+            try:
+                tfidf_vector = tfidf_vectors[i].toarray().ravel()
+                word2vec_vector = word2vec_model.wv[sentences_train[i]].mean(axis=0)
+                doc_vectors[i] = word2vec_vector
+                combined_vectors_train[i] = np.concatenate((tfidf_vector, word2vec_vector))
+            except Exception as e:
+                print('ERROR with ',i,e)
+                pass
+
+        # Store word2vec and word2vec+tfidf matrixes:
+        with open(output_dir + 'word2vec_tfidf_liar.pickle', 'wb') as handle:
+            pickle.dump(combined_vectors_train, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(output_dir + 'word2vec_liar.pickle', 'wb') as handle:
+            pickle.dump(doc_vectors, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         
 
@@ -430,21 +508,41 @@ if __name__ == '__main__':
     p = preprocessor_to_text()
     #p.bulk_preprocess(10000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text')
     #p.random_bulk_preprocess(1000,'data/news_cleaned_2018_02_13.csv','data/news_cleaned_preprocessed_text_random')
-    #p.bulk_preprocess_sk(8000,'data/corpus_10000.csv','kiwikiwi')
+    #p.bulk_preprocess_tfidf(8000,'data/corpus_10000.csv','kiwikiwi')
     #p.draw_n_samples(100000)
     #p.reservoir_sample(10000)
     #p.load_liar('data/train_liar.tsv')
     #p.word2vec_preprocessing('data/kiwi/','data/word2vectest/')
     #p.bulk_preprocess(800000,'data/corpus_1000000_reservoir.csv','data/kiwimill/')
-    #p.word2vec_preprocessing_improved('data/kiwi/','data/word2vectest3/')
+    #p.word2vec_preprocessing('data/kiwi/','data/word2vectest3/')
     #p.bulk_preprocess(80000,'data/corpus_1000000_reservoir.csv','data/kiwihun/')
-    #p.bulk_preprocess_sk(80000,'data/corpus_100000_reservoir.csv','kiwikiwitest4')
-    #p.word2vec_tfidf_preprocessing_improved('data/kiwihun/','data/word2vectest4/')
-    #p.word2vec_preprocessing_improved('data/kiwihun/','data/word2vectest5_no_tfidf/')
+    #p.bulk_preprocess_tfidf(80000,'data/corpus_100000_reservoir.csv','kiwikiwitest4')
+    #p.word2vec_tfidf_preprocessing('data/kiwihun/','data/word2vectest4/')
+    #p.word2vec_preprocessing('data/kiwihun/','data/word2vectest5_no_tfidf/')
     #p.bulk_preprocess(80000,'data/corpus_1000000_reservoir.csv','data/kiwimill/')
-    #p.word2vec_preprocessing_improved('data/kiwimill/','data/word2vectest5/')
-    #p.word2vec_preprocessing_improved('data/kiwihun/','data/word2vectest6_no_tfidf_tuned_cbow/')
-    p.word2vec_preprocessing_improved('data/kiwihun/','data/word2vectest6_tuned_cbow/')
+    #p.word2vec_preprocessing('data/kiwimill/','data/word2vectest5/')
+    #p.word2vec_preprocessing('data/kiwihun/','data/word2vectest6_no_tfidf_tuned_cbow/')
+    #p.word2vec_preprocessing('data/kiwihun/','data/word2vectest6_no_tfidf_tuned_cbow/')
+    
+    #Følgende giver 85,25%:
+    p.word2vec_tfidf_preprocessing('data/word2vec_tfidf_final/','data/word2vec_tfidf_final/')
+    #p.word2vec_tfidf_preprocessing('data/kiwihun/','data/word2vec_and_tfidf_100k_repeated/')
+
+
+    #Er ikke kørt færdig:
+    #p.word2vec_tfidf_preprocessing('data/kiwimill/','data/word2vec_and_tfidf_1m/')
+
+    # Tfidf:
+    #p.bulk_preprocess_tfidf(90000,'data/corpus_100000_reservoir.csv','tfidf_preprocessed_small2')
+    #p.load_liar('data/train_liar.tsv','data/word2vec_and_tfidf_100k_repeated/',preprocess=True)
+
+    #p.bulk_preprocess_tfidf(900000,'data/corpus_1000000_reservoir.csv','tfidf_preprocessed')
 
 
 
+"""
+TODO:
+
+Check that tfidf preprocessing doesnt run into vocab errors
+
+"""
