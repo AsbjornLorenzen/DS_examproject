@@ -1,6 +1,6 @@
 import pandas as pd
 from scripts import preprocessor, preprocessor_to_text
-from models import simple_models#, NN
+from models import simple_models, NN
 from models import naive_bayes
 from models import SVM
 import gc
