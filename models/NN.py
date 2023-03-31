@@ -28,11 +28,6 @@ class NN_model():
         if model_name not in valid_models:
             raise ValueError("model not valid")
 
-        # Create file for writing model output
-        f = open("model_outputs/NN_model_output.txt","w")
-        f.write("File created")
-        f.close()
-
         #split data features(x) and labels(y)
         x_train, y_train = self.split_x_y(train_df)
         x_val, y_val = self.split_x_y(val_df)
